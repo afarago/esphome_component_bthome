@@ -10,8 +10,9 @@ from . import (
 
 DEPENDENCIES = ["bthome"]
 
-CONF_MAC_ADDRESS = "mac_address"
+CONF_SENSORS = "sensors"
 CONF_MEASUREMENT_TYPE = "measurement_type"
+# CONF_NAME_PREFIX = "name_prefix"
 
 MEASUREMENT_TYPES_BINARY_SENSOR = {
     "generic_boolean": 0x0F,
@@ -44,50 +45,57 @@ MEASUREMENT_TYPES_BINARY_SENSOR = {
     "window": 0x2D,
 }
 
-def _lookup_measurement_type(value):
-  if value in MEASUREMENT_TYPES_BINARY_SENSOR:
-    return MEASUREMENT_TYPES_BINARY_SENSOR[value]
-  raise cv.Invalid(f"Cannot resolve measurement type '{value}'.")
-
-def _translate_measurement_type(value):
+def _check_measurement_type(value):
     if isinstance(value, int):
         return value
     try:
         return int(value)
     except ValueError:
         pass
-    return _lookup_measurement_type(value)
+      
+    if value in MEASUREMENT_TYPES_BINARY_SENSOR:
+      return MEASUREMENT_TYPES_BINARY_SENSOR[value]
 
 def validate_measurement_type(value):
-    value = _translate_measurement_type(value)
-    ## todo check min/max
+    value = _check_measurement_type(value)
     return value
 
 BTHomeBinarySensor = bthome_ns.class_("BTHomeBinarySensor", binary_sensor.BinarySensor, cg.Component)
 
-def validate_config(config):
-    # todo: sould not allow binary_sensor if receiver_pin is not registered
-    return config
-
-CONFIG_SCHEMA = cv.All(
-    binary_sensor.BINARY_SENSOR_SCHEMA.extend(
+CONFIG_SCHEMA = cv.Schema(
     {
-        cv.GenerateID(): cv.declare_id(BTHomeBinarySensor),
-        cv.GenerateID(CONF_BTHome_ID): cv.use_id(BTHome),
-        cv.Required(CONF_MAC_ADDRESS): cv.mac_address,
-        cv.Required(CONF_MEASUREMENT_TYPE): validate_measurement_type,
-    }), 
-    validate_config,
-)
-
+      cv.GenerateID(CONF_BTHome_ID): cv.use_id(BTHome),
+      cv.Required(CONF_MAC_ADDRESS): cv.mac_address,
+      # cv.Optional(CONF_NAME_PREFIX): cv.string,
+      cv.Required(CONF_SENSORS): cv.All( 
+        cv.ensure_list(
+          binary_sensor.BINARY_SENSOR_SCHEMA.extend(
+            {
+                cv.GenerateID(): cv.declare_id(BTHomeBinarySensor),
+                cv.Required(CONF_MEASUREMENT_TYPE): validate_measurement_type,
+            })
+          .extend(cv.COMPONENT_SCHEMA)
+          ), 
+        cv.Length(min=1) ),
+    }
+).extend(cv.COMPONENT_SCHEMA)
+  
 async def to_code(config):
     bthome_component = await cg.get_variable(config[CONF_BTHome_ID])
 
-    var = cg.new_Pvariable(config[CONF_ID])
-    await cg.register_component(var, config)
-    await binary_sensor.register_binary_sensor(var, config)
+    for i, config_item in enumerate(config[CONF_SENSORS]):
+      var = cg.new_Pvariable(config_item[CONF_ID])
+      await cg.register_component(var, config_item)
+      await binary_sensor.register_binary_sensor(var, config_item)
 
-    cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
-    cg.add(var.set_measurement_type(config[CONF_MEASUREMENT_TYPE]))
+      cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
     
-    cg.add(bthome_component.register_sensor(var))
+      # if (isinstance(config_item[CONF_MEASUREMENT_TYPE], dict)):
+      #   measurement_type_record = config_item[CONF_MEASUREMENT_TYPE]
+      #   cg.add(var.set_measurement_type(measurement_type_record["measurement_type"]))
+      #   cg.add(var.set_accuracy_decimals(measurement_type_record["accuracy_decimals"]))
+      #   cg.add(var.set_unit_of_measurement(measurement_type_record["unit_of_measurement"]))
+      # else:
+      cg.add(var.set_measurement_type(config_item[CONF_MEASUREMENT_TYPE]))
+
+      cg.add(bthome_component.register_sensor(var))

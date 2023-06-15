@@ -17,11 +17,6 @@ void BTHomeBaseSensor::dump_config()
   ESP_LOGCONFIG(TAG, "measurement_type 0x%X", this->measurement_type_);
 }
 
-bool BTHomeBaseSensor::match(const uint8_t *mac_address, const uint8_t measurement_type)
-{
-  return this->match(addr_to_uint64(mac_address), measurement_type);
-}
-
 }
 }
 

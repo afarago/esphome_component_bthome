@@ -1,0 +1,1 @@
++ add multiple measurements of same type option (postfix with _<n>)

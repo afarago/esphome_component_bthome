@@ -17,6 +17,13 @@ using namespace std;
 namespace esphome {
 namespace bthome {
 
+typedef enum
+{
+  BTProtoVersion_None = 0,
+  BTProtoVersion_BTHomeV1 = 1,
+  BTProtoVersion_BTHomeV2 = 2,
+} BTProtoVersion_e;
+
 class BTHome : public Component, public esp32_ble_tracker::ESPBTDeviceListener
 {
 public:
@@ -31,8 +38,8 @@ public:
   }
 
 protected:
-  bool parse_header_(const esp32_ble_tracker::ServiceData &service_data);
-  bool parse_message_(const std::vector<uint8_t> &message, const uint64_t address);
+  BTProtoVersion_e parse_header_(const esp32_ble_tracker::ServiceData &service_data);
+  bool parse_message_bthomev1_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device);
 
 private:
   bool dump_unmatched_packages;

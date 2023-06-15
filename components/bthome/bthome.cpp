@@ -27,26 +27,6 @@ typedef enum
   HaBleType_MAC = 4
 } HaBleTypes_e;
 
-// union int16_u_t {
-//     int16_t s;
-//     uint16_t u;
-// };
-// union int32_u_t {
-//     int32_t s;
-//     uint32_t u;
-// };
-
-// uint16_t combine_bytes_little_endian_u16(const uint8_t *data) { return ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
-// uint32_t combine_bytes_little_endian_u32(const uint8_t *data) { return ((data[3] & 0xFF) << 24) | ((data[2] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
-// int16_t combine_bytes_little_endian_s16(const uint8_t *data) {
-//     uint16_t val = combine_bytes_little_endian_u16(data);
-//     return static_cast<int16_u_t*>(static_cast<void*>(&val))->s;
-//   }
-// int32_t combine_bytes_little_endian_s32(const uint8_t *data) {
-//     uint32_t val = combine_bytes_little_endian_u32(data);
-//     return static_cast<int32_u_t*>(static_cast<void*>(&val))->s;
-//   }
-
 bool BTHome::parse_device(const esp32_ble_tracker::ESPBTDevice &device)
 {
   // if (device.address_uint64() != this->address_) {
@@ -58,39 +38,38 @@ bool BTHome::parse_device(const esp32_ble_tracker::ESPBTDevice &device)
   bool success = false;
   for (auto &service_data : device.get_service_datas())
   {
-    if (!parse_header_(service_data))
-      continue;
-    if (!parse_message_(service_data.data, device.address_uint64()))
-      continue;
-
-    success = true;
+    BTProtoVersion_e proto = parse_header_(service_data);
+    switch (proto) {
+      case BTProtoVersion_BTHomeV1:
+        if (parse_message_bthomev1_(service_data, device))
+          success = true;
+        break;
+    }
   }
 
   return success;
 }
 
-bool BTHome::parse_header_(const esp32_ble_tracker::ServiceData &service_data)
+BTProtoVersion_e BTHome::parse_header_(const esp32_ble_tracker::ServiceData &service_data)
 {
+  if (service_data.uuid.contains(0x1C, 0x18)) return BTProtoVersion_BTHomeV1; //unencrypted: 0000181c, encrypted: 0000181e
+  else if (service_data.uuid.contains(0xD2, 0xFC)) return BTProtoVersion_BTHomeV2; //0000fcd2
+  else return BTProtoVersion_None;
 
-  if (!service_data.uuid.contains(0x1C, 0x18))
-  {
-    // ESP_LOGD("bthome", "parse_header(): no service data UUID magic bytes.");
-    return false;
-  }
   // auto raw = service_data.data;
-
   // static uint8_t last_frame_count = 0;
   // if (last_frame_count == raw[13]) {
   //   ESP_LOGVV(TAG, "parse_header(): duplicate data packet received (%hhu).", last_frame_count);
   //   return {};
   // }
   // last_frame_count = raw[13];
-
-  return true;
 }
 
-bool BTHome::parse_message_(const std::vector<uint8_t> &message, const uint64_t address)
+bool BTHome::parse_message_bthomev1_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device)
 {
+  const std::vector<uint8_t> &message = service_data.data;
+  const uint64_t address = device.address_uint64();
+  const std::string name = device.get_name();
 
   // parse BTHome v1 protocol data - https://bthome.io/v1/ - UUID16 = 0x181C
   // TODO: add v2 parsing later
@@ -159,7 +138,7 @@ bool BTHome::parse_message_(const std::vector<uint8_t> &message, const uint64_t 
     bool matched = false;
     for (auto btbase : this->my_sensors)
     {
-      if (btbase->match(address, obj_meas_type))
+      if (btbase->match(address, name, obj_meas_type))
       {
 
         // auto btsensor = dynamic_cast<BTHomeSensor*>(btbase);
@@ -172,7 +151,8 @@ bool BTHome::parse_message_(const std::vector<uint8_t> &message, const uint64_t 
 #ifdef ESPHOME_LOG_HAS_DEBUG
     if (!matched && dump_unmatched_packages)
     {
-      ESP_LOGD(TAG, "unmatched reading from %s, measure_type: 0x%02x, value: %0.3f", addr_to_str(address).c_str(), obj_meas_type, value);
+      ESP_LOGD(TAG, "unmatched reading from %s, %s, measure_type: 0x%02x, value: %0.3f", 
+        name.c_str(), addr_to_str(address).c_str(), obj_meas_type, value);
     }
 #endif // ESPHOME_LOG_HAS_DEBUG
   }
