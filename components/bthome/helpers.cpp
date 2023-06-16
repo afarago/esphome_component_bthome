@@ -29,31 +29,6 @@ uint64_t addr_to_uint64(const uint8_t *address)
   return u;
 }
 
-union int16_u_t
-{
-  int16_t s;
-  uint16_t u;
-};
-union int32_u_t
-{
-  int32_t s;
-  uint32_t u;
-};
-
-uint16_t combine_bytes_little_endian_u16(const uint8_t *data) { return ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
-uint32_t combine_bytes_little_endian_u32(const uint8_t *data) { return ((data[3] & 0xFF) << 24) | ((data[2] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
-int16_t combine_bytes_little_endian_s16(const uint8_t *data)
-{
-  uint16_t val = combine_bytes_little_endian_u16(data);
-  return static_cast<int16_u_t *>(static_cast<void *>(&val))->s;
-}
-
-int32_t combine_bytes_little_endian_s32(const uint8_t *data)
-{
-  uint32_t val = combine_bytes_little_endian_u32(data);
-  return static_cast<int32_u_t *>(static_cast<void *>(&val))->s;
-}
-
 }
 }
 

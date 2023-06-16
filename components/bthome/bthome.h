@@ -39,7 +39,8 @@ public:
 
 protected:
   BTProtoVersion_e parse_header_(const esp32_ble_tracker::ServiceData &service_data);
-  bool parse_message_bthomev1_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device);
+  bool parse_message_bthome_v1(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device);
+  void report_measurement_(uint8_t measurement_type, float value, uint64_t address, std::string name);
 
 private:
   bool dump_unmatched_packages;
