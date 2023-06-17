@@ -59,6 +59,7 @@ bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service
       btdevice = btdevice_i;
       break;
     }
+  }
   if (!btdevice) return false;
 
   // Parse the payload data
@@ -99,7 +100,6 @@ bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service
       btdevice->report_measurement_(measurement_type, value, this->dump_unmatched_packages);
     }
   );
-}
 }
 
 }
