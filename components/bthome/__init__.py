@@ -10,7 +10,7 @@ from esphome.const import (
 from esphome.core import CORE, coroutine_with_priority
 
 CONF_BTHome_ID = "BTHome_ID"
-CONF_DUMP_UNMATCHED_PACKAGES = "dump_unmatched_packages";
+CONF_DUMP_UNMATCHED = "dump_unmatched";
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = ["esp32_ble_tracker"]
@@ -26,7 +26,7 @@ CONFIG_SCHEMA = cv.All(
         cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(BTHome),
-            cv.Optional(CONF_DUMP_UNMATCHED_PACKAGES): cv.boolean,
+            cv.Optional(CONF_DUMP_UNMATCHED): cv.boolean,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -38,7 +38,7 @@ async def to_code(config):
     await cg.register_component(var, config)
     await esp32_ble_tracker.register_ble_device(var, config)
 
-    if CONF_DUMP_UNMATCHED_PACKAGES in config:
-      cg.add(var.set_dump_unmatched_packages(config[CONF_DUMP_UNMATCHED_PACKAGES]))
+    if CONF_DUMP_UNMATCHED in config:
+      cg.add(var.set_dump_unmatched_packages(config[CONF_DUMP_UNMATCHED]))
     
     

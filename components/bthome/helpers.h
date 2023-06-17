@@ -1,3 +1,4 @@
+#include <string>
 using namespace std;
 
 #ifdef USE_ESP32

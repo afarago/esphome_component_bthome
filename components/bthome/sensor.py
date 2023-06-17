@@ -36,7 +36,8 @@ from esphome.const import (
   DEVICE_CLASS_VOLTAGE,
 )
 from . import (
-    bthome_ns, BTHome, CONF_BTHome_ID
+    bthome_ns, BTHome, CONF_BTHome_ID,
+    CONF_DUMP_UNMATCHED
 )
 
 DEPENDENCIES = ["bthome"]
@@ -44,29 +45,47 @@ DEPENDENCIES = ["bthome"]
 CONF_SENSORS = "sensors"
 CONF_MEASUREMENT_TYPE = "measurement_type"
 CONF_NAME_PREFIX = "name_prefix"
-CONF_DEVICE_NAME = "device_name"
 
 MEASUREMENT_TYPES_SENSOR = {
-    "packet_id": {"measurement_type": 0x00, "accuracy_decimals": 0, "unit_of_measurement":"" , "device_class": DEVICE_CLASS_EMPTY},
-    "battery": {"measurement_type": 0x01, "accuracy_decimals": 0, "unit_of_measurement":"%" , "device_class": DEVICE_CLASS_BATTERY},
-    "temperature": {"measurement_type": 0x02, "accuracy_decimals": 2, "unit_of_measurement":"°C" , "device_class": DEVICE_CLASS_TEMPERATURE},
-    "humidity": {"measurement_type": 0x03, "accuracy_decimals": 2, "unit_of_measurement":"%" , "device_class": DEVICE_CLASS_HUMIDITY},
-    "pressure": {"measurement_type": 0x04, "accuracy_decimals": 2, "unit_of_measurement":"hPa" , "device_class": DEVICE_CLASS_PRESSURE},
-    "illuminance": {"measurement_type": 0x05, "accuracy_decimals": 2, "unit_of_measurement":"lux" , "device_class": DEVICE_CLASS_ILLUMINANCE},
-    "mass_kg": {"measurement_type": 0x06, "accuracy_decimals": 2, "unit_of_measurement":"kg" , "device_class": DEVICE_CLASS_EMPTY},
-    "mass_lb": {"measurement_type": 0x07, "accuracy_decimals": 2, "unit_of_measurement":"lb" , "device_class": DEVICE_CLASS_EMPTY},
-    "dewpoint": {"measurement_type": 0x08, "accuracy_decimals": 2, "unit_of_measurement":"°C" , "device_class": DEVICE_CLASS_EMPTY},
-    "count": {"measurement_type": 0x09, "accuracy_decimals": 0, "unit_of_measurement":"" , "device_class": DEVICE_CLASS_EMPTY},
-    "energy": {"measurement_type": 0x0A, "accuracy_decimals": 3, "unit_of_measurement":"kWh" , "device_class": DEVICE_CLASS_ENERGY},
-    "power": {"measurement_type": 0x0B, "accuracy_decimals": 2, "unit_of_measurement":"W" , "device_class": DEVICE_CLASS_POWER},
-    "voltage": {"measurement_type": 0x0C, "accuracy_decimals": 3, "unit_of_measurement":"V" , "device_class": DEVICE_CLASS_VOLTAGE},
-    "pm2_5": {"measurement_type": 0x0D, "accuracy_decimals": 0, "unit_of_measurement":"ug/m3" , "device_class": DEVICE_CLASS_PM25},
-    "pm10": {"measurement_type": 0x0E, "accuracy_decimals": 0, "unit_of_measurement":"ug/m3" , "device_class": DEVICE_CLASS_PM10},
-    "co2": {"measurement_type": 0x12, "accuracy_decimals": 0, "unit_of_measurement":"ppm" , "device_class": DEVICE_CLASS_CARBON_DIOXIDE},
-    "tvoc": {"measurement_type": 0x13, "accuracy_decimals": 0, "unit_of_measurement":"ug/m3" , "device_class": DEVICE_CLASS_VOLATILE_ORGANIC_COMPOUNDS},
-    "moisture": {"measurement_type": 0x14, "accuracy_decimals": 2, "unit_of_measurement":"%" , "device_class": DEVICE_CLASS_EMPTY},
-    "humidity2": {"measurement_type": 0x2E, "accuracy_decimals": 0, "unit_of_measurement":"%" , "device_class": DEVICE_CLASS_HUMIDITY},
-    "moisture2": {"measurement_type": 0x2F, "accuracy_decimals": 0, "unit_of_measurement":"%" , "device_class": DEVICE_CLASS_EMPTY},
+  "packet_id": {"measurement_type": 0x00, "accuracy_decimals": 0, "unit_of_measurement": "", "device_class": DEVICE_CLASS_EMPTY},
+  "battery": {"measurement_type": 0x01, "accuracy_decimals": 0, "unit_of_measurement": "%", "device_class": DEVICE_CLASS_BATTERY},
+  "temperature": {"measurement_type": 0x02, "accuracy_decimals": 2, "unit_of_measurement": "°C", "device_class": DEVICE_CLASS_TEMPERATURE},
+  "humidity": {"measurement_type": 0x03, "accuracy_decimals": 2, "unit_of_measurement": "%", "device_class": DEVICE_CLASS_HUMIDITY},
+  "pressure": {"measurement_type": 0x04, "accuracy_decimals": 2, "unit_of_measurement": "hPa", "device_class": DEVICE_CLASS_PRESSURE},
+  "illuminance": {"measurement_type": 0x05, "accuracy_decimals": 2, "unit_of_measurement": "lux", "device_class": DEVICE_CLASS_ILLUMINANCE},
+  "mass_kg": {"measurement_type": 0x06, "accuracy_decimals": 2, "unit_of_measurement": "kg", "device_class": DEVICE_CLASS_EMPTY},
+  "mass_lb": {"measurement_type": 0x07, "accuracy_decimals": 2, "unit_of_measurement": "lb", "device_class": DEVICE_CLASS_EMPTY},
+  "dewpoint": {"measurement_type": 0x08, "accuracy_decimals": 2, "unit_of_measurement": "°C", "device_class": DEVICE_CLASS_EMPTY},
+  "count_small": {"measurement_type": 0x09, "accuracy_decimals": 0, "unit_of_measurement": "", "device_class": DEVICE_CLASS_EMPTY},
+  "energy": {"measurement_type": 0x0A, "accuracy_decimals": 3, "unit_of_measurement": "kWh", "device_class": DEVICE_CLASS_ENERGY},
+  "power": {"measurement_type": 0x0B, "accuracy_decimals": 2, "unit_of_measurement": "W", "device_class": DEVICE_CLASS_POWER},
+  "voltage": {"measurement_type": 0x0C, "accuracy_decimals": 3, "unit_of_measurement": "V", "device_class": DEVICE_CLASS_VOLTAGE},
+  "pm2_5": {"measurement_type": 0x0D, "accuracy_decimals": 0, "unit_of_measurement": "ug/m3", "device_class": DEVICE_CLASS_PM25},
+  "pm10": {"measurement_type": 0x0E, "accuracy_decimals": 0, "unit_of_measurement": "ug/m3", "device_class": DEVICE_CLASS_PM10},
+  "co2": {"measurement_type": 0x12, "accuracy_decimals": 0, "unit_of_measurement": "ppm", "device_class": DEVICE_CLASS_CARBON_DIOXIDE},
+  "tvoc": {"measurement_type": 0x13, "accuracy_decimals": 0, "unit_of_measurement": "ug/m3", "device_class": DEVICE_CLASS_VOLATILE_ORGANIC_COMPOUNDS},
+  "moisture": {"measurement_type": 0x14, "accuracy_decimals": 2, "unit_of_measurement": "%", "device_class": DEVICE_CLASS_EMPTY},
+  "humidity_coarse": {"measurement_type": 0x2E, "accuracy_decimals": 0, "unit_of_measurement": "%", "device_class": DEVICE_CLASS_HUMIDITY},
+  "moisture_coarse": {"measurement_type": 0x2F, "accuracy_decimals": 0, "unit_of_measurement": "%", "device_class": DEVICE_CLASS_EMPTY},
+  "count_medium": {"measurement_type": 0x3D, "accuracy_decimals": 0, "unit_of_measurement": "", "device_class": DEVICE_CLASS_EMPTY},
+  "count_large": {"measurement_type": 0x3E, "accuracy_decimals": 0, "unit_of_measurement": "", "device_class": DEVICE_CLASS_EMPTY},
+  "rotation": {"measurement_type": 0x3F, "accuracy_decimals": 1, "unit_of_measurement": "°", "device_class": DEVICE_CLASS_EMPTY},
+  "distance_mm": {"measurement_type": 0x40, "accuracy_decimals": 0, "unit_of_measurement": "mm", "device_class": DEVICE_CLASS_EMPTY},
+  "distance_m": {"measurement_type": 0x41, "accuracy_decimals": 1, "unit_of_measurement": "m", "device_class": DEVICE_CLASS_EMPTY},
+  "duration": {"measurement_type": 0x42, "accuracy_decimals": 3, "unit_of_measurement": "s", "device_class": DEVICE_CLASS_EMPTY},
+  "current": {"measurement_type": 0x43, "accuracy_decimals": 3, "unit_of_measurement": "A", "device_class": DEVICE_CLASS_CURRENT},
+  "speed": {"measurement_type": 0x44, "accuracy_decimals": 2, "unit_of_measurement": "m/s", "device_class": DEVICE_CLASS_EMPTY},
+  "temperature_coarse": {"measurement_type": 0x45, "accuracy_decimals": 1, "unit_of_measurement": "°C", "device_class": DEVICE_CLASS_TEMPERATURE},
+  "UV_index": {"measurement_type": 0x46, "accuracy_decimals": 1, "unit_of_measurement": "", "device_class": DEVICE_CLASS_EMPTY},
+  "volume": {"measurement_type": 0x47, "accuracy_decimals": 1, "unit_of_measurement": "L", "device_class": DEVICE_CLASS_EMPTY},
+  "volume_course": {"measurement_type": 0x48, "accuracy_decimals": 0, "unit_of_measurement": "mL", "device_class": DEVICE_CLASS_EMPTY},
+  "volume_Flow_Rate": {"measurement_type": 0x49, "accuracy_decimals": 3, "unit_of_measurement": "m3/hr", "device_class": DEVICE_CLASS_EMPTY},
+  "voltage_coarse": {"measurement_type": 0x4A, "accuracy_decimals": 1, "unit_of_measurement": "V", "device_class": DEVICE_CLASS_EMPTY},
+  "gas": {"measurement_type": 0x4B, "accuracy_decimals": 3, "unit_of_measurement": "m3", "device_class": DEVICE_CLASS_GAS},
+  "gas_large": {"measurement_type": 0x4C, "accuracy_decimals": 3, "unit_of_measurement": "m3", "device_class": DEVICE_CLASS_GAS},
+  "energy_coarse": {"measurement_type": 0x4D, "accuracy_decimals": 3, "unit_of_measurement": "kWh", "device_class": DEVICE_CLASS_ENERGY},
+  "volume_precise": {"measurement_type": 0x4E, "accuracy_decimals": 3, "unit_of_measurement": "L", "device_class": DEVICE_CLASS_EMPTY},
+  "water": {"measurement_type": 0x4F, "accuracy_decimals": 3, "unit_of_measurement": "L", "device_class": DEVICE_CLASS_EMPTY},
 }
 
 def _check_measurement_type(value):
@@ -77,27 +96,24 @@ def _check_measurement_type(value):
     except ValueError:
         pass
       
-    if value in MEASUREMENT_TYPES_SENSOR:
-      return MEASUREMENT_TYPES_SENSOR[value]
+    if not value in MEASUREMENT_TYPES_SENSOR:
+      raise cv.Invalid(F"Invalid measurement type '{value}'!")
+    
+    return MEASUREMENT_TYPES_SENSOR[value]
 
 def validate_measurement_type(value):
   value = _check_measurement_type(value)
   return value
   
-def validator_config(config):
-  if CONF_MAC_ADDRESS not in config and CONF_DEVICE_NAME not in config:
-    raise cv.Invalid(F"At least one of '{CONF_MAC_ADDRESS}:' or '{CONF_DEVICE_NAME}:' is required!")      
-  return config
-
 BTHomeSensor = bthome_ns.class_("BTHomeSensor", sensor.Sensor, cg.Component)
 
 CONFIG_SCHEMA = cv.All(
   cv.Schema(
     {
       cv.GenerateID(CONF_BTHome_ID): cv.use_id(BTHome),
-      cv.Optional(CONF_MAC_ADDRESS): cv.mac_address,
-      cv.Optional(CONF_DEVICE_NAME): cv.string,
+      cv.Required(CONF_MAC_ADDRESS): cv.mac_address,
       cv.Optional(CONF_NAME_PREFIX): cv.string,
+      cv.Optional(CONF_DUMP_UNMATCHED): cv.boolean,
       cv.Required(CONF_SENSORS): cv.All( 
         cv.ensure_list(
           sensor.SENSOR_SCHEMA.extend(
@@ -108,8 +124,7 @@ CONFIG_SCHEMA = cv.All(
           .extend(cv.COMPONENT_SCHEMA)
           ), 
         cv.Length(min=1)),
-      }).extend(cv.COMPONENT_SCHEMA),
-      validator_config
+      }).extend(cv.COMPONENT_SCHEMA)
 )
   
 async def to_code(config):
@@ -123,17 +138,19 @@ async def to_code(config):
       await cg.register_component(var, config_item)
       await sensor.register_sensor(var, config_item)
 
-      if CONF_MAC_ADDRESS in config:
-        cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
-      if CONF_DEVICE_NAME in config:
-        cg.add(var.set_device_name(config[CONF_DEVICE_NAME]))
+      cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
+      if CONF_DUMP_UNMATCHED in config:
+        cg.add(var.set_dump_unmatched_packages(config[CONF_DUMP_UNMATCHED]))
     
       if (isinstance(config_item[CONF_MEASUREMENT_TYPE], dict)):
         measurement_type_record = config_item[CONF_MEASUREMENT_TYPE]
         cg.add(var.set_measurement_type(measurement_type_record["measurement_type"]))
-        cg.add(var.set_accuracy_decimals(measurement_type_record["accuracy_decimals"]))
-        cg.add(var.set_unit_of_measurement(measurement_type_record["unit_of_measurement"]))
-        cg.add(var.set_device_class(measurement_type_record["device_class"]))
+        if measurement_type_record["accuracy_decimals"]:
+          cg.add(var.set_accuracy_decimals(measurement_type_record["accuracy_decimals"]))
+        if measurement_type_record["unit_of_measurement"]:
+          cg.add(var.set_unit_of_measurement(measurement_type_record["unit_of_measurement"]))
+        if measurement_type_record["device_class"]:
+          cg.add(var.set_device_class(measurement_type_record["device_class"]))
       else:
         cg.add(var.set_measurement_type(config_item[CONF_MEASUREMENT_TYPE]))
     

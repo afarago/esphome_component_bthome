@@ -9,26 +9,23 @@ namespace esphome {
 
 static const char *const TAG = "bthome_parser";
 
-// Type bit 5-7
 typedef enum
 {
   HaBleType_uint = 0,
   HaBleType_sint = 1,
-  HaBleType_float = 2,
-  HaBleType_string = 3,
-  HaBleType_MAC = 4
+  // HaBleType_float = 2,
+  // HaBleType_string = 3,
+  // HaBleType_MAC = 4
 } HaBleTypes_e;
 
-union int16_u_t
-{
-  int16_t s;
-  uint16_t u;
-};
-union int32_u_t
-{
-  int32_t s;
-  uint32_t u;
-};
+// Sign extend trick
+// http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend
+template<typename T, unsigned B> inline T signextend(const T x) {
+  struct {
+    T x : B;
+  } s;
+  return s.x = x;
+}
 
 uint16_t combine_bytes_little_endian_u16(const uint8_t *data) { return ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
 uint32_t combine_bytes_little_endian_u32(const uint8_t *data) { return ((data[3] & 0xFF) << 24) | ((data[2] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
@@ -124,14 +121,6 @@ static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { // DataLen 123 bits, DataTyp
   0x64,	 // 0x4F | water | uint32 (4 bytes) | datatype: 0 | factor_exp10: 0.001 | example: 4F87562A01
 };
 
-// template<typename T, unsigned B> inline T signextend(const T x) {
-//   struct {
-//     T x : B;
-//   } s;
-//   return s.x = x;
-// }
-// float temp = signextend<signed int, 9>(t_register) * TEMP_LSB;
-
 float parse_integer(const uint8_t *data, HaBleTypes_e obj_data_format, uint8_t data_length)
 {
   float value = {};
@@ -140,31 +129,28 @@ float parse_integer(const uint8_t *data, HaBleTypes_e obj_data_format, uint8_t d
   {
     case 1:
       {
-        return *data; //!!
+        uint16_t value1 = *data;
+        return !is_signed ? value1 : signextend<int8_t,8>(value1);
       }
-      // break;
     case 2:
       {
         uint16_t value1 = combine_bytes_little_endian_u16(data);
-        return !is_signed ? value1 : static_cast<int16_u_t *>(static_cast<void *>(&value1))->s;
+        return !is_signed ? value1 : signextend<int16_t,16>(value1);
       }
-      // break;
     case 4:
       {
         uint32_t value1 = combine_bytes_little_endian_u32(data);
-        return !is_signed ? value1 : static_cast<int32_u_t *>(static_cast<void *>(&value1))->s;
+        return !is_signed ? value1 : signextend<int32_t,32>(value1);
       }
-      // break;
     default:
       return 0;
   }
 }
 
 // parse BTHome v1 protocol data - https://bthome.io/v1/ - UUID16 = 0x181C
-bool parse_payload_bthome_v1(const uint8_t *payload_data, uint32_t payload_length, measurement_cb_fn_t measurement_cb)
+// parse BTHome v2 protocol data - https://bthome.io/ - UUID16 = 0xfcd2
+bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, BTProtoVersion_e proto, measurement_cb_fn_t measurement_cb)
 {
-  uint8_t sw_version = 1; //!!
-
   uint8_t next_obj_start = 0;
   uint8_t prev_obj_meas_type = 0;
   uint8_t obj_meas_type;
@@ -178,7 +164,7 @@ bool parse_payload_bthome_v1(const uint8_t *payload_data, uint32_t payload_lengt
   {
     auto obj_start = next_obj_start;
 
-    if (sw_version == 1) {
+    if (proto == BTProtoVersion_BTHomeV1) {
       // BTHome V1
       obj_meas_type = payload_data[obj_start + 1];
       // obj_control_byte = payload_data[obj_start];
@@ -186,7 +172,7 @@ bool parse_payload_bthome_v1(const uint8_t *payload_data, uint32_t payload_lengt
       // obj_data_format = (obj_control_byte >> 5) & 7;  // 3 bits (5-7)
       obj_data_start = obj_start + 2;
 
-    } else {
+    } else if (proto == BTProtoVersion_BTHomeV2) {
       // BTHome V2
       if (prev_obj_meas_type > obj_meas_type) {
         ESP_LOGD(TAG, "BTHome device is not sending object ids in numerical order (from low to high object id).");
@@ -194,13 +180,17 @@ bool parse_payload_bthome_v1(const uint8_t *payload_data, uint32_t payload_lengt
 
       prev_obj_meas_type = obj_meas_type;
       obj_data_start = obj_start + 1;
+
+    } else {
+      ESP_LOGD(TAG, "BTHome unsupported protocol version %d.", proto);
+      return false;
     }
 
     if (obj_meas_type >= sizeof(MEAS_TYPES_FLAGS)/sizeof(uint8_t)) {
       ESP_LOGD(TAG, "Invalid Object ID found in payload.");
       break;
     }
-    uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
+    const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
     obj_data_length = meas_type_flags & 0b00000111;
     obj_data_format = meas_type_flags & 0b00011000;
     obj_data_factor = MEAS_TYPES_FACTORS[
@@ -217,15 +207,13 @@ bool parse_payload_bthome_v1(const uint8_t *payload_data, uint32_t payload_lengt
       break;
     } 
 
-    auto obj_value_data_length = obj_data_length - (sw_version == 1 ? 1 : 0);
+    const uint8_t obj_value_data_length = obj_data_length - (proto == BTProtoVersion_BTHomeV1 ? 1 : 0);
 
     const uint8_t *data = &payload_data[obj_data_start];
     float value = 0;
     if (obj_data_format == HaBleType_uint || obj_data_format == HaBleType_sint) {
         value = parse_integer(data, (HaBleTypes_e)obj_data_format, obj_value_data_length) * obj_data_factor;
     } else {
-        //PROBLEM!
-        // TODO: handle other types as well (float, string, MAC)
         ESP_LOGD(TAG, "Invalid payload data type %d.", obj_data_format);
         continue;
     }
