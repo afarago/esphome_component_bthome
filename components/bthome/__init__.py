@@ -10,7 +10,7 @@ from esphome.const import (
 from esphome.core import CORE, coroutine_with_priority
 
 CONF_BTHome_ID = "BTHome_ID"
-CONF_DUMP_UNMATCHED = "dump_unmatched";
+CONF_DUMP_OPTION = "dump";
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = ["esp32_ble_tracker"]
@@ -22,11 +22,20 @@ AUTO_LOAD = ["binary_sensor", "sensor"]
 bthome_ns = cg.esphome_ns.namespace("bthome")
 BTHome = bthome_ns.class_("BTHome", esp32_ble_tracker.ESPBTDeviceListener, cg.Component)
 
+DumpOption = bthome_ns.enum("DumpOption")
+DUMP_OPTION = {
+    "NONE": DumpOption.DumpOption_None,
+    "UNMATCHED": DumpOption.DumpOption_Unmatched,
+    "ALL": DumpOption.DumpOption_All,
+}
+
 CONFIG_SCHEMA = cv.All(
         cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(BTHome),
-            cv.Optional(CONF_DUMP_UNMATCHED): cv.boolean,
+            cv.Optional(CONF_DUMP_OPTION): cv.enum(
+                DUMP_OPTION, upper=True, space="_"
+            ),
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -38,7 +47,6 @@ async def to_code(config):
     await cg.register_component(var, config)
     await esp32_ble_tracker.register_ble_device(var, config)
 
-    if CONF_DUMP_UNMATCHED in config:
-      cg.add(var.set_dump_unmatched_packages(config[CONF_DUMP_UNMATCHED]))
-    
-    
+    if CONF_DUMP_OPTION in config:
+      cg.add(var.set_dump_option(config[CONF_DUMP_OPTION]))
+      

@@ -13,7 +13,6 @@ static const char *const TAG = "bthome";
 
 void BTHomeBaseSensor::dump_config()
 {
-  ESP_LOGCONFIG(TAG, "address 0x%X", this->address_);
   ESP_LOGCONFIG(TAG, "measurement_type 0x%X", this->measurement_type_);
 }
 

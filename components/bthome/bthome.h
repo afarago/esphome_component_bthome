@@ -6,6 +6,7 @@
 
 #include "bthome_parser.h"
 
+#include "bthome_common.h"
 #include "bthome_device.h"
 #include "bthome_basesensor.h"
 #include "bthome_binarysensor.h"
@@ -23,20 +24,20 @@ namespace bthome {
 class BTHome : public Component, public esp32_ble_tracker::ESPBTDeviceListener
 {
 public:
-  bool get_dump_unmatched_packages() { return  this->dump_unmatched_packages; };
-  void set_dump_unmatched_packages(bool value) { dump_unmatched_packages = value; };
+  DumpOption_e get_dump_option() { return this->dump_option_; };
+  void set_dump_option(DumpOption_e value) { this->dump_option_ = value; };
 
   bool parse_device(const esp32_ble_tracker::ESPBTDevice &device) override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
-  void register_sensor(esphome::bthome::BTHomeBaseSensor *sensor) {
-    auto address = sensor->get_address();
-
-    BTHomeDevice *btdevice = NULL;
-    for (auto btdevice_i : this->my_devices) {
-      if (btdevice_i->match(address)) {
-        btdevice = btdevice_i;
-        break;
+  BTHomeDevice* register_sensor(BTHomeDevice *btdevice_in, uint64_t address, esphome::bthome::BTHomeBaseSensor *sensor) {
+    BTHomeDevice *btdevice = btdevice_in;
+    if (btdevice != NULL) {
+      for (auto btdevice_i : this->my_devices) {
+        if (btdevice_i->match(address)) {
+          btdevice = btdevice_i;
+          break;
+        }
       }
     }
 
@@ -47,14 +48,16 @@ public:
     }
 
     btdevice->register_sensor(sensor);
+    return btdevice;
   }
 
 protected:
   BTProtoVersion_e parse_header_(const esp32_ble_tracker::ServiceData &service_data);
   bool parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, BTProtoVersion_e proto);
+  void report_measurement_(uint8_t measurement_type, float value, uint64_t address, BTHomeDevice *btdevice);
 
 private:
-  bool dump_unmatched_packages;
+  DumpOption_e dump_option_{DumpOption_None};
   std::vector<esphome::bthome::BTHomeDevice *> my_devices;
 };
 

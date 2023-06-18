@@ -2,6 +2,7 @@
 
 #include "esphome/core/component.h"
 
+#include "bthome_common.h"
 #include "bthome_basesensor.h"
 #include "bthome_sensor.h"
 
@@ -10,15 +11,17 @@
 namespace esphome {
 namespace bthome {
 
-class BTHomeDevice
+class BTHomeDevice: public Component
 {
 public:
   uint64_t get_address() { return this->address_; };
   void set_address(uint64_t address) { address_ = address; };
-  bool get_dump_unmatched_packages() { return  this->dump_unmatched_packages; };
-  void set_dump_unmatched_packages(bool value) { dump_unmatched_packages = value; };
+  DumpOption_e get_dump_option() { return this->dump_option_; };
+  void set_dump_option(DumpOption_e value) { this->dump_option_ = value; };
 
-  void report_measurement_(uint8_t measurement_type, float value, bool global_dump_unmatched_packages);
+  void dump_config() override;
+
+  bool report_measurement_(uint8_t measurement_type, float value);
 
   bool match(const uint64_t mac_address) { 
     return (this->address_ == mac_address);
@@ -29,11 +32,12 @@ public:
   }
 
 private:
-  bool dump_unmatched_packages;
+  DumpOption_e dump_option_{DumpOption_None};
   uint64_t address_{0};
 
   std::vector<esphome::bthome::BTHomeBaseSensor *> my_sensors;
 };
+
 }
 }
 

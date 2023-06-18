@@ -47,8 +47,7 @@ BTProtoVersion_e BTHome::parse_header_(const esp32_ble_tracker::ServiceData &ser
   // last_frame_count = raw[13];
 }
 
-bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, BTProtoVersion_e proto)
-{
+bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, BTProtoVersion_e proto) {
   // Check and match the device
   const uint64_t address = device.address_uint64();
   // const std::string name = device.get_name();
@@ -60,7 +59,7 @@ bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service
       break;
     }
   }
-  if (!btdevice) return false;
+  if (!btdevice && this->get_dump_option() != DumpOption_None) return false;
 
   // Parse the payload data
   const std::vector<uint8_t> &message = service_data.data;
@@ -96,11 +95,31 @@ bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service
 
   // parse the payload and report measurements in the callback
   return esphome::parse_payload_bthome(payload_data, payload_length, proto,
-    [this, address, btdevice](uint8_t measurement_type, float value) { 
-      btdevice->report_measurement_(measurement_type, value, this->dump_unmatched_packages);
-    }
+   NULL, NULL
   );
 }
+
+void BTHome::report_measurement_(uint8_t measurement_type, float value, uint64_t address, BTHomeDevice *btdevice) {
+
+  bool matched = btdevice ? 
+                    btdevice->report_measurement_(measurement_type, value) : 
+                    false;
+
+#ifdef ESPHOME_LOG_HAS_DEBUG
+  // show in debug log any unmatched packages based on the dump_options
+  if (
+      (this->get_dump_option() == DumpOption_All || (!matched && (this->get_dump_option() == DumpOption_Unmatched))) || 
+      (btdevice != NULL &&
+        (btdevice->get_dump_option() == DumpOption_All || (!matched && (btdevice->get_dump_option() == DumpOption_Unmatched))) 
+        ) 
+    ) {
+    ESP_LOGD(TAG, "bthome reading from %s, measure_type: 0x%02x, value: %0.3f", 
+      addr_to_str(address).c_str(), measurement_type, value);
+  }
+#endif // ESPHOME_LOG_HAS_DEBUG
+}
+
+
 
 }
 }

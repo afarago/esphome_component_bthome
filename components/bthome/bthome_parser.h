@@ -14,7 +14,9 @@ typedef enum
 } BTProtoVersion_e;
 
 using measurement_cb_fn_t = std::function<void(uint8_t measurement_type, float value)>;
+using log_cb_fn_t = std::function<void(const char* message)>;
 
-bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, BTProtoVersion_e proto, measurement_cb_fn_t measurement_cb);
+bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, BTProtoVersion_e proto, 
+  measurement_cb_fn_t measurement_cb, log_cb_fn_t log_cb);
                           
 }

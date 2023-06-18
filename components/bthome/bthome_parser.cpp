@@ -2,7 +2,6 @@
 #include <map>
 #include <pgmspace.h>
 
-#include "esphome/core/log.h"
 #include "bthome_parser.h"
 
 namespace esphome {
@@ -149,7 +148,8 @@ float parse_integer(const uint8_t *data, HaBleTypes_e obj_data_format, uint8_t d
 
 // parse BTHome v1 protocol data - https://bthome.io/v1/ - UUID16 = 0x181C
 // parse BTHome v2 protocol data - https://bthome.io/ - UUID16 = 0xfcd2
-bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, BTProtoVersion_e proto, measurement_cb_fn_t measurement_cb)
+bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, BTProtoVersion_e proto, 
+                          measurement_cb_fn_t measurement_cb, log_cb_fn_t log_cb)
 {
   uint8_t next_obj_start = 0;
   uint8_t prev_obj_meas_type = 0;
@@ -175,19 +175,23 @@ bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, 
     } else if (proto == BTProtoVersion_BTHomeV2) {
       // BTHome V2
       if (prev_obj_meas_type > obj_meas_type) {
-        ESP_LOGD(TAG, "BTHome device is not sending object ids in numerical order (from low to high object id).");
+        if (log_cb) log_cb("BTHome device is not sending object ids in numerical order (from low to high object id).");
       }
 
       prev_obj_meas_type = obj_meas_type;
       obj_data_start = obj_start + 1;
 
     } else {
-      ESP_LOGD(TAG, "BTHome unsupported protocol version %d.", proto);
+      if (log_cb) {
+        std::string message = "BTHome unsupported protocol version - ";
+        message.append(std::to_string(proto));
+        log_cb(message.c_str());
+      }
       return false;
     }
 
     if (obj_meas_type >= sizeof(MEAS_TYPES_FLAGS)/sizeof(uint8_t)) {
-      ESP_LOGD(TAG, "Invalid Object ID found in payload.");
+      if (log_cb) log_cb("Invalid Object ID found in payload.");
       break;
     }
     const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
@@ -199,11 +203,11 @@ bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, 
     next_obj_start = obj_start + obj_data_length + 1;
 
     if (obj_data_length == 0) {
-      ESP_LOGD(TAG, "Invalid payload data length found with length 0.");
+      if (log_cb) log_cb("Invalid payload data length found with length 0.");
       continue;
     }
     if (payload_length < next_obj_start) {
-      ESP_LOGD(TAG, "Invalid payload data length.");
+      if (log_cb) log_cb("Invalid payload data length.");
       break;
     } 
 
@@ -214,14 +218,16 @@ bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, 
     if (obj_data_format == HaBleType_uint || obj_data_format == HaBleType_sint) {
         value = parse_integer(data, (HaBleTypes_e)obj_data_format, obj_value_data_length) * obj_data_factor;
     } else {
-        ESP_LOGD(TAG, "Invalid payload data type %d.", obj_data_format);
+        if (log_cb) {
+          std::string message = "Invalid payload data type - ";
+          message.append(std::to_string(obj_data_format));
+          log_cb(message.c_str());
+        }
         continue;
     }
 
     // report measurement
-    if (measurement_cb) {
-      measurement_cb(obj_meas_type, value);
-    }
+    if (measurement_cb) measurement_cb(obj_meas_type, value);
   }
 
   return true;

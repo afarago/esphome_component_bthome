@@ -37,7 +37,7 @@ from esphome.const import (
 )
 from . import (
     bthome_ns, BTHome, CONF_BTHome_ID,
-    CONF_DUMP_UNMATCHED
+    CONF_DUMP_OPTION, DUMP_OPTION
 )
 
 DEPENDENCIES = ["bthome"]
@@ -105,15 +105,19 @@ def validate_measurement_type(value):
   value = _check_measurement_type(value)
   return value
   
+BTHomeDevice = bthome_ns.class_("BTHomeDevice", cg.Component)
 BTHomeSensor = bthome_ns.class_("BTHomeSensor", sensor.Sensor, cg.Component)
 
 CONFIG_SCHEMA = cv.All(
   cv.Schema(
     {
       cv.GenerateID(CONF_BTHome_ID): cv.use_id(BTHome),
+      cv.GenerateID(): cv.declare_id(BTHomeDevice),
       cv.Required(CONF_MAC_ADDRESS): cv.mac_address,
       cv.Optional(CONF_NAME_PREFIX): cv.string,
-      cv.Optional(CONF_DUMP_UNMATCHED): cv.boolean,
+      cv.Optional(CONF_DUMP_OPTION): cv.enum(
+          DUMP_OPTION, upper=True, space="_"
+      ),
       cv.Required(CONF_SENSORS): cv.All( 
         cv.ensure_list(
           sensor.SENSOR_SCHEMA.extend(
@@ -129,29 +133,32 @@ CONFIG_SCHEMA = cv.All(
   
 async def to_code(config):
     bthome_component = await cg.get_variable(config[CONF_BTHome_ID])
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
 
+    cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
+    if CONF_DUMP_OPTION in config:
+      cg.add(var.set_dump_option(config[CONF_DUMP_OPTION]))
+
+    # iterate around the subsensors
     for i, config_item in enumerate(config[CONF_SENSORS]):
-      var = cg.new_Pvariable(config_item[CONF_ID])
+      var_item = cg.new_Pvariable(config_item[CONF_ID])
       if CONF_NAME_PREFIX in config:
         config_item[CONF_NAME] = config[CONF_NAME_PREFIX] + " " + config_item[CONF_NAME]
               
-      await cg.register_component(var, config_item)
-      await sensor.register_sensor(var, config_item)
+      await cg.register_component(var_item, config_item)
+      await sensor.register_sensor(var_item, config_item)
+      cg.add(bthome_component.register_sensor(var, config[CONF_MAC_ADDRESS].as_hex, var_item))
 
-      cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
-      if CONF_DUMP_UNMATCHED in config:
-        cg.add(var.set_dump_unmatched_packages(config[CONF_DUMP_UNMATCHED]))
-    
       if (isinstance(config_item[CONF_MEASUREMENT_TYPE], dict)):
         measurement_type_record = config_item[CONF_MEASUREMENT_TYPE]
-        cg.add(var.set_measurement_type(measurement_type_record["measurement_type"]))
+        cg.add(var_item.set_measurement_type(measurement_type_record["measurement_type"]))
         if measurement_type_record["accuracy_decimals"]:
-          cg.add(var.set_accuracy_decimals(measurement_type_record["accuracy_decimals"]))
+          cg.add(var_item.set_accuracy_decimals(measurement_type_record["accuracy_decimals"]))
         if measurement_type_record["unit_of_measurement"]:
-          cg.add(var.set_unit_of_measurement(measurement_type_record["unit_of_measurement"]))
+          cg.add(var_item.set_unit_of_measurement(measurement_type_record["unit_of_measurement"]))
         if measurement_type_record["device_class"]:
-          cg.add(var.set_device_class(measurement_type_record["device_class"]))
+          cg.add(var_item.set_device_class(measurement_type_record["device_class"]))
       else:
-        cg.add(var.set_measurement_type(config_item[CONF_MEASUREMENT_TYPE]))
+        cg.add(var_item.set_measurement_type(config_item[CONF_MEASUREMENT_TYPE]))
     
-      cg.add(bthome_component.register_sensor(var))

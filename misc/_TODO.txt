@@ -1,1 +1,5 @@
 + add multiple measurements of same type option (postfix with _<n>)
++ dynamically add sensors after discovery? -- option
++ dump options: all, unmatched, none
+
+
