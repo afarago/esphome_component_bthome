@@ -1,7 +1,7 @@
 #include "esphome/core/log.h"
 #include "esphome/core/component.h"
 
-#include "helpers.h"
+#include "bthome_common.h"
 #include "bthome_basesensor.h"
 
 #ifdef USE_ESP32

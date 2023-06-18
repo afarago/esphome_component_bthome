@@ -3,7 +3,7 @@
 
 #include "bthome_parser.h"
 
-#include "helpers.h"
+#include "bthome_common.h"
 #include "bthome_device.h"
 #include "bthome_basesensor.h"
 #include "bthome_sensor.h"
