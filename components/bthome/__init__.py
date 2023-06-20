@@ -109,11 +109,13 @@ def bthome_shared_sensor_configs(is_binary_sensor, MEASUREMENT_TYPES):
   )
   
   async def to_code(config):
-      bthome_component = await cg.get_variable(config[CONF_BTHome_ID])
+      paren = await cg.get_variable(config[CONF_BTHome_ID])
       var = cg.new_Pvariable(config[CONF_ID])
       await cg.register_component(var, config)
 
       cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
+      cg.add(paren.register_device(var))
+      
       if CONF_DUMP_OPTION in config:
         cg.add(var.set_dump_option(config[CONF_DUMP_OPTION]))
 
@@ -125,7 +127,7 @@ def bthome_shared_sensor_configs(is_binary_sensor, MEASUREMENT_TYPES):
                 
         await cg.register_component(var_item, config_item)
         await register_async_fn(var_item, config_item)
-        cg.add(bthome_component.register_sensor(var, config[CONF_MAC_ADDRESS].as_hex, var_item))
+        cg.add(paren.register_sensor(var, config[CONF_MAC_ADDRESS].as_hex, var_item))
 
         if (isinstance(config_item[CONF_MEASUREMENT_TYPE], dict)):
           measurement_type_record = config_item[CONF_MEASUREMENT_TYPE]
