@@ -1,3 +1,9 @@
+/*
+ BTHome protocol virtual sensors for ESPHome
+
+ Author: Attila Farago
+ */
+
 #include "bthome_device.h"
 
 using namespace std;

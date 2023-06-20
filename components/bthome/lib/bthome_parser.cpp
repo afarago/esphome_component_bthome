@@ -1,8 +1,11 @@
-//
-// Author: Attila Farago
-// Based on bthome_ble source parser by Ernst Klamer
-// https://pypi.org/project/bthome-ble/
-//
+/*
+ BTHome V1, V2 protocol packages parser
+
+ Based on bthome_ble source parser by Ernst Klamer
+ https://pypi.org/project/bthome-ble/
+
+ Author: Attila Farago
+ */
 
 #include <vector>
 #include <map>
@@ -12,7 +15,6 @@
 #include "bthome_parser.h"
 
 namespace bthomelib {
-
 
 typedef enum
 {

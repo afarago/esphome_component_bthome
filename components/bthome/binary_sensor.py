@@ -1,3 +1,9 @@
+'''
+ BTHome protocol virtual sensors for ESPHome
+
+ Author: Attila Farago
+ '''
+
 from esphome.const import (
   DEVICE_CLASS_EMPTY,
   DEVICE_CLASS_BATTERY,

@@ -1,3 +1,10 @@
+/*
+ BTHome protocol virtual sensors for ESPHome
+
+ Author: Attila Farago
+ */
+
+
 #pragma once
 
 #include "esphome/core/component.h"

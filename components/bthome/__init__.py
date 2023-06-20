@@ -1,3 +1,9 @@
+'''
+ BTHome protocol virtual sensors for ESPHome
+
+ Author: Attila Farago
+ '''
+
 from esphome.cpp_generator import RawExpression
 import esphome.codegen as cg
 import esphome.config_validation as cv
