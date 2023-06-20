@@ -1,12 +1,18 @@
+//
+// Author: Attila Farago
+// Based on bthome_ble source parser by Ernst Klamer
+// https://pypi.org/project/bthome-ble/
+//
+
 #include <vector>
 #include <map>
+#include <string>
 #include <pgmspace.h>
 
 #include "bthome_parser.h"
 
-namespace esphome {
+namespace bthomelib {
 
-static const char *const TAG = "bthome_parser";
 
 typedef enum
 {
@@ -26,8 +32,9 @@ template<typename T, unsigned B> inline T signextend(const T x) {
   return s.x = x;
 }
 
-uint16_t combine_bytes_little_endian_u16(const uint8_t *data) { return ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
-uint32_t combine_bytes_little_endian_u32(const uint8_t *data) { return ((data[3] & 0xFF) << 24) | ((data[2] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
+inline uint16_t combine_bytes_little_endian_u16(const uint8_t *data) { return ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
+inline uint32_t combine_bytes_little_endian_u24(const uint8_t *data) { return ((data[2] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
+inline uint32_t combine_bytes_little_endian_u32(const uint8_t *data) { return ((data[3] & 0xFF) << 24) | ((data[2] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
 
 static const float MEAS_TYPES_FACTORS[] = {
   1,      // 0
@@ -136,6 +143,11 @@ float parse_integer(const uint8_t *data, HaBleTypes_e obj_data_format, uint8_t d
         uint16_t value1 = combine_bytes_little_endian_u16(data);
         return !is_signed ? value1 : signextend<int16_t,16>(value1);
       }
+    case 3:
+      {
+        uint32_t value1 = combine_bytes_little_endian_u24(data);
+        return !is_signed ? value1 : signextend<int32_t,32>(value1);
+      }
     case 4:
       {
         uint32_t value1 = combine_bytes_little_endian_u32(data);
@@ -174,6 +186,7 @@ bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, 
 
     } else if (proto == BTProtoVersion_BTHomeV2) {
       // BTHome V2
+      obj_meas_type = payload_data[obj_start];
       if (prev_obj_meas_type > obj_meas_type) {
         if (log_cb) log_cb("BTHome device is not sending object ids in numerical order (from low to high object id).");
       }
@@ -191,16 +204,21 @@ bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, 
     }
 
     if (obj_meas_type >= sizeof(MEAS_TYPES_FLAGS)/sizeof(uint8_t)) {
-      if (log_cb) log_cb("Invalid Object ID found in payload.");
+      if (log_cb) {
+        std::string message = "Invalid Object ID found in payload - ";
+        message.append(std::to_string(obj_meas_type));
+        log_cb(message.c_str());
+      }
       break;
     }
+
     const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
-    obj_data_length = meas_type_flags & 0b00000111;
-    obj_data_format = meas_type_flags & 0b00011000;
+    obj_data_length = (meas_type_flags & 0b00000111);
+    obj_data_format = (meas_type_flags & 0b00011000) >> 3;
     obj_data_factor = MEAS_TYPES_FACTORS[
-                      meas_type_flags & 0b01100000
+                      (meas_type_flags & 0b01100000) >> 5
                       ];
-    next_obj_start = obj_start + obj_data_length + 1;
+    next_obj_start = obj_data_start + obj_data_length;
 
     if (obj_data_length == 0) {
       if (log_cb) log_cb("Invalid payload data length found with length 0.");
@@ -211,7 +229,7 @@ bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, 
       break;
     } 
 
-    const uint8_t obj_value_data_length = obj_data_length - (proto == BTProtoVersion_BTHomeV1 ? 1 : 0);
+    const uint8_t obj_value_data_length = obj_data_length;
 
     const uint8_t *data = &payload_data[obj_data_start];
     float value = 0;

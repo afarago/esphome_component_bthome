@@ -4,7 +4,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/esp32_ble_tracker/esp32_ble_tracker.h"
 
-#include "bthome_parser.h"
+#include "lib/bthome_parser.h"
 
 #include "bthome_common.h"
 #include "bthome_device.h"
@@ -30,35 +30,43 @@ public:
   bool parse_device(const esp32_ble_tracker::ESPBTDevice &device) override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
-  BTHomeDevice* register_sensor(BTHomeDevice *btdevice_in, uint64_t address, esphome::bthome::BTHomeBaseSensor *sensor) {
+  void register_device(BTHomeDevice *btdevice) {
+    this->my_devices.push_back(btdevice);
+  }
+
+  BTHomeDevice* register_sensor(BTHomeDevice *btdevice_in, uint64_t address, BTHomeBaseSensor *sensor) {
+
+    // btdevice can be provied for sake of speed
+    // if btdevice is not given then look for a matching device (by address)
     BTHomeDevice *btdevice = btdevice_in;
-    if (btdevice != NULL) {
+    if (!btdevice) {
       for (auto btdevice_i : this->my_devices) {
         if (btdevice_i->match(address)) {
           btdevice = btdevice_i;
           break;
         }
       }
+
+      if (!btdevice) {
+        btdevice = new BTHomeDevice();
+        btdevice->set_address(address);
+        this->register_device(btdevice);
+      }
     }
 
-    if (!btdevice) {
-      btdevice = new BTHomeDevice();
-      btdevice->set_address(address);
-      this->my_devices.push_back(btdevice);
-    }
-
+    // register new btsensor for the btdevice
     btdevice->register_sensor(sensor);
     return btdevice;
   }
 
 protected:
-  BTProtoVersion_e parse_header_(const esp32_ble_tracker::ServiceData &service_data);
-  bool parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, BTProtoVersion_e proto);
+  bthomelib::BTProtoVersion_e parse_header_(const esp32_ble_tracker::ServiceData &service_data);
+  bool parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, bthomelib::BTProtoVersion_e proto);
   void report_measurement_(uint8_t measurement_type, float value, uint64_t address, BTHomeDevice *btdevice);
 
 private:
   DumpOption_e dump_option_{DumpOption_None};
-  std::vector<esphome::bthome::BTHomeDevice *> my_devices;
+  std::vector<BTHomeDevice *> my_devices;
 };
 
 }

@@ -1,10 +1,16 @@
+//
+// Author: Attila Farago
+// Based on bthome_ble source parser by Ernst Klamer
+// https://pypi.org/project/bthome-ble/
+//
+
 #pragma once
 
 #include <functional>
 
-using namespace std;
+namespace bthomelib {
 
-namespace esphome {
+using namespace std;
 
 typedef enum
 {
@@ -18,5 +24,5 @@ using log_cb_fn_t = std::function<void(const char* message)>;
 
 bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, BTProtoVersion_e proto, 
   measurement_cb_fn_t measurement_cb, log_cb_fn_t log_cb);
-                          
+
 }

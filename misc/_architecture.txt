@@ -1,0 +1,76 @@
+bthome
+	parse v1, v2
+	parse payload
+
+espnow
+
+
+meshrc_bthome_over_espnow
+bthome_over_espnow -- BTHoENW (project Beethowen)
+
+beethowen
+-- parser sensor
+		beethowen:
+			
+		sensor:
+		  - platform: beethowen
+			mac_address: 11:22:33:44:55:66
+			name_prefix: Beethowen TestDevice
+			role: destination # default/server
+			sensors:
+			  - measurement_type: temperature
+				name: Temperature
+	
+void on(esp_rc_callback_t callback) {
+
+
+0xD2, 0xFC, 0x80 <BTHOME> data packet
+0xD2, 0xFD, 0x01 == find server
+0xD2, 0xFD, 0x02 == server found (empty)
+
+// upon packet arrival check and return (data+3) ptr
+// check V2 header 2 bytes + sw_version 1 byte (adv_info) -- 0xD2, 0xFC, 0x80) --> ((0x80<<5&7) == 2 // 5-7 bits)
+// max payload is 247 bytes
+typedef std::function<void(uint8_t* data)> esp_rc_data_callback_t;
+// after parsing
+typedef std::function<void(uint8_t meas_typ, float value)> esp_rc_data_callback_t;
+	
+	
+	
+-- lib encoder
+		bthomeencoder = new BTHomeEncoder()
+		bthomeencoder->resetMeasurement()
+		bthomeencoder->addMeasurement(0x02, 25.06);
+		bthomeencoder->addMeasurement(0x03, 58.00);
+		bthomeencoder->buildPaket()
+		// bthomeencoder->m_sensorData
+		
+-- esphome encoder
+		beethowen: (all sending sensors are registered)
+		  server_mac: 22:33:44:55:66:77
+		  # server_mac: auto_find
+		
+		sensor:
+		  - platform: beethowen
+			name_prefix: Beethowen TestDevice
+			role: source
+			sensors:
+			  - measurement_type: temperature
+				id: beethowen_testdevice_temperature
+				name: Temperature
+				lambda: |-
+				  auto value = id(bmp085_temperature_sensor).state;
+				  return value;
+		
+		script:
+		  - id: update_and_send_data
+			lambda: |-
+			  id(my_bmp085).update();
+			  
+			  // collects all sensors with data, assembles, then sends
+			  global_beethowen_component->send();
+			  
+	BeethowenComponent::BeethowenComponent() { global_beethowen_component = this; }
+	extern BeethowenComponent *global_beethowen_component;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
+extern APIServer *global_api_server;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
