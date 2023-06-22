@@ -13,6 +13,9 @@ Note: as for now supports V1 and V2 unencryted formats.
 .. code-block:: yaml
 
     # Example configuration entry
+    external_components:
+      - source: github://afarago/esphome_component_bthome
+    
     esp32_ble_tracker:
 
     bthome:

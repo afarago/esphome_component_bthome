@@ -6,10 +6,10 @@
 
 #pragma once
 
+#ifdef USE_ESP32
+
 #include <string>
 using namespace std;
-
-#ifdef USE_ESP32
 
 namespace esphome {
 namespace bthome {

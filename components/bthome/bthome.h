@@ -11,7 +11,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/esp32_ble_tracker/esp32_ble_tracker.h"
 
-#include "lib/bthome_parser.h"
+#include "esphome/components/bthome_base/bthome_parser.h"
 
 #include "bthome_common.h"
 #include "bthome_device.h"
