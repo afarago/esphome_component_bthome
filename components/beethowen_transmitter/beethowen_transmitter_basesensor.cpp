@@ -7,17 +7,15 @@
 #include "esphome/core/log.h"
 #include "esphome/core/component.h"
 
-#include "beethowen_common.h"
-#include "beethowen_basesensor.h"
+#include "beethowen_transmitter_basesensor.h"
 
 namespace esphome
 {
-  namespace beethowen
+  namespace beethowen_transmitter
   {
+    static const char *const TAG = "beethowen_transmitter";
 
-    static const char *const TAG = "beethowen";
-
-    void BeethowenBaseSensor::dump_config()
+    void BeethowenTransmitterBaseSensor::dump_config()
     {
       ESP_LOGCONFIG(TAG, "measurement_type 0x%X", this->measurement_type_);
     }

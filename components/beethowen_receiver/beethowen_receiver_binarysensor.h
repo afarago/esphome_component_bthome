@@ -9,18 +9,18 @@
 #include "esphome/core/component.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 
-#include "beethowen_basesensor.h"
+#include "beethowen_receiver_basesensor.h"
 
 #include <vector>
 #include <map>
 
 namespace esphome
 {
-  namespace beethowen
+  namespace beethowen_receiver
   {
 
-    class BeethowenBinarySensor : public binary_sensor::BinarySensor,
-                                  public BeethowenBaseSensor
+    class BeethowenReceiverBinarySensor : public binary_sensor::BinarySensor,
+                                          public BeethowenReceiverBaseSensor
     {
 
       void publish_data(float value) override

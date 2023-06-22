@@ -11,7 +11,7 @@
 
 #include "meshrc_bthome_over_espnow.h"
 
-namespace beethowen_lib
+namespace beethowen_base
 {
 
 // Magic bytes 0xD2 0xFC 0x80

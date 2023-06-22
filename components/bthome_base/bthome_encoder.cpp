@@ -15,7 +15,7 @@
 
 #include "bthome_encoder.h"
 
-namespace bthome_lib
+namespace bthome_base
 {
 
   void BTHomeEncoder::resetMeasurement()

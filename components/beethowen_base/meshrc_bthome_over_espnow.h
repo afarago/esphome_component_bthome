@@ -6,9 +6,6 @@
 
 #pragma once
 
-#ifndef __MESH_RC_BEETHOWEN_H__
-#define __MESH_RC_BEETHOWEN_H__
-
 #include <functional>
 
 #ifdef USE_ESP32
@@ -23,7 +20,7 @@
 #include <ESP8266WiFi.h>
 #endif
 
-namespace beethowen_lib
+namespace beethowen_base
 {
 
 #ifdef USE_ESP32
@@ -53,5 +50,3 @@ namespace beethowen_lib
     void end();
 
 } // namespace MeshRC
-
-#endif //__MESH_RC_BEETHOWEN_H__

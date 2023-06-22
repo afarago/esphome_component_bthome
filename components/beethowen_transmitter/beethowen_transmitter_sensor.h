@@ -9,25 +9,19 @@
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 
-#include "beethowen_basesensor.h"
+#include "beethowen_transmitter_basesensor.h"
 
 #include <vector>
 #include <map>
 
 namespace esphome
 {
-  namespace beethowen
+  namespace beethowen_transmitter
   {
 
-    class BeethowenSensor : public sensor::Sensor,
-                            public BeethowenBaseSensor
+    class BeethowenTransmitterSensor : public sensor::Sensor,
+                                       public BeethowenTransmitterBaseSensor
     {
-
-      void publish_data(float value) override
-      {
-        this->publish_state(value);
-      };
     };
-
   }
 }

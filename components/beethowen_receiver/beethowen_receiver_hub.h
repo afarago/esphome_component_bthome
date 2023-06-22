@@ -12,38 +12,36 @@
 
 #include "esphome/core/component.h"
 
-#include "beethowen_common.h"
-#include "beethowen_device.h"
-#include "beethowen_basesensor.h"
+#include "beethowen_receiver_common.h"
+#include "beethowen_receiver_device.h"
+#include "beethowen_receiver_basesensor.h"
 
 namespace esphome
 {
-  namespace beethowen
+  namespace beethowen_receiver
   {
 
-    class BeethowenHub : public Component
+    class BeethowenReceiverHub : public Component
     {
     public:
-      void setup();
+      void setup() override;
 
       inline DumpOption_e get_dump_option() { return this->dump_option_; };
       inline void set_dump_option(DumpOption_e value) { this->dump_option_ = value; };
-      inline RoleOption_e get_role_option() { return this->role_option_; };
-      inline void set_role_option(RoleOption_e value) { this->role_option_ = value; };
 
       float get_setup_priority() const override { return setup_priority::DATA; }
 
-      void register_device(BeethowenDevice *btdevice)
+      void register_device(BeethowenReceiverDevice *btdevice)
       {
         this->my_devices.push_back(btdevice);
       }
 
-      BeethowenDevice *register_sensor(BeethowenDevice *btdevice_in, uint64_t address, BeethowenBaseSensor *sensor)
+      BeethowenReceiverDevice *register_sensor(BeethowenReceiverDevice *btdevice_in, uint64_t address, BeethowenReceiverBaseSensor *sensor)
       {
 
         // btdevice can be provied for sake of speed
         // if btdevice is not given then look for a matching device (by address)
-        BeethowenDevice *btdevice = btdevice_in;
+        auto *btdevice = btdevice_in;
         if (!btdevice)
         {
           for (auto btdevice_i : this->my_devices)
@@ -57,7 +55,7 @@ namespace esphome
 
           if (!btdevice)
           {
-            btdevice = new BeethowenDevice();
+            btdevice = new BeethowenReceiverDevice();
             btdevice->set_address(address);
             this->register_device(btdevice);
           }
@@ -69,14 +67,13 @@ namespace esphome
       }
 
     protected:
-      void report_measurement_(uint8_t measurement_type, float value, uint64_t address, BeethowenDevice *btdevice, bool &device_header_reported);
+      void report_measurement_(uint8_t measurement_type, float value, uint64_t address, BeethowenReceiverDevice *btdevice, bool &device_header_reported);
       void beethowen_on_data_(uint8_t *data, uint8_t size);
       void beethowen_on_command_(uint8_t command);
 
     private:
       DumpOption_e dump_option_{DumpOption_None};
-      RoleOption_e role_option_{RoleOption_None};
-      std::vector<BeethowenDevice *> my_devices;
+      std::vector<BeethowenReceiverDevice *> my_devices;
     };
 
   }

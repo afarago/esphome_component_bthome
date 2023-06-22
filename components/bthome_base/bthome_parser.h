@@ -11,7 +11,9 @@
 
 #include <functional>
 
-namespace bthome_lib
+#include "bthome_base_common.h"
+
+namespace bthome_base
 {
 
   using namespace std;

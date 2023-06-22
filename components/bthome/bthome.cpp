@@ -27,8 +27,8 @@ bool BTHome::parse_device(const esp32_ble_tracker::ESPBTDevice &device)
   bool success = false;
   for (auto &service_data : device.get_service_datas())
   {
-    bthomelib::BTProtoVersion_e proto = parse_header_(service_data);
-    if (proto != bthomelib::BTProtoVersion_None) {
+    bthome_base::BTProtoVersion_e proto = parse_header_(service_data);
+    if (proto != bthome_base::BTProtoVersion_None) {
       if (parse_message_bthome_(service_data, device, proto)) 
         success = true;
     }
@@ -37,13 +37,13 @@ bool BTHome::parse_device(const esp32_ble_tracker::ESPBTDevice &device)
   return false;
 }
 
-bthomelib::BTProtoVersion_e BTHome::parse_header_(const esp32_ble_tracker::ServiceData &service_data)
+bthome_base::BTProtoVersion_e BTHome::parse_header_(const esp32_ble_tracker::ServiceData &service_data)
 {
   // 0000181c-0000-1000-8000-00805f9b34fb, 0000181e-0000-1000-8000-00805f9b34fb
   // esp32_ble_tracker::ESPBTUUID::from_uint16(0x181C)
-  if (service_data.uuid.contains(0x1C, 0x18)) return bthomelib::BTProtoVersion_BTHomeV1;       // unencrypted: 0000181c, encrypted: 0000181e
-  else if (service_data.uuid.contains(0xD2, 0xFC)) return bthomelib::BTProtoVersion_BTHomeV2;  // 0000fcd2
-  else return bthomelib::BTProtoVersion_None;
+  if (service_data.uuid.contains(0x1C, 0x18)) return bthome_base::BTProtoVersion_BTHomeV1;       // unencrypted: 0000181c, encrypted: 0000181e
+  else if (service_data.uuid.contains(0xD2, 0xFC)) return bthome_base::BTProtoVersion_BTHomeV2;  // 0000fcd2
+  else return bthome_base::BTProtoVersion_None;
 
   // auto raw = service_data.data;
   // static uint8_t last_frame_count = 0;
@@ -54,7 +54,7 @@ bthomelib::BTProtoVersion_e BTHome::parse_header_(const esp32_ble_tracker::Servi
   // last_frame_count = raw[13];
 }
 
-bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, bthomelib::BTProtoVersion_e proto) {
+bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, bthome_base::BTProtoVersion_e proto) {
   // Check and match the device
   const uint64_t address = device.address_uint64();
   // const std::string name = device.get_name();
@@ -74,10 +74,10 @@ bool BTHome::parse_message_bthome_(const esp32_ble_tracker::ServiceData &service
   const uint8_t *payload_data = message.data();
   auto payload_length = message.size();
 
-  if (proto == bthomelib::BTProtoVersion_BTHomeV1) {
+  if (proto == bthome_base::BTProtoVersion_BTHomeV1) {
     // NOOP
 
-  } else if (proto == bthomelib::BTProtoVersion_BTHomeV2) {
+  } else if (proto == bthome_base::BTProtoVersion_BTHomeV2) {
     uint8_t adv_info = payload_data[0];
     //bool encryption = bool(adv_info & (1 << 0));       // bit 0
     bool mac_included = bool(adv_info & (1 << 1));     // bit 1

@@ -4,24 +4,24 @@
  Author: Attila Farago
  */
 
-#include "beethowen_device.h"
+#include "beethowen_receiver_device.h"
 
 using namespace std;
 
 namespace esphome
 {
-  namespace beethowen
+  namespace beethowen_receiver
   {
 
-    static const char *const TAG = "beethowen";
+    static const char *const TAG = "beethowen_receiver";
 
-    void BeethowenDevice::dump_config()
+    void BeethowenReceiverDevice::dump_config()
     {
       ESP_LOGCONFIG(TAG, "address 0x%X", this->address_);
       ESP_LOGCONFIG(TAG, "dump_option %d", this->dump_option_);
     }
 
-    bool BeethowenDevice::report_measurement_(uint8_t measurement_type, float value)
+    bool BeethowenReceiverDevice::report_measurement_(uint8_t measurement_type, float value)
     {
 
       // got a measurement --> look for matching sensors and publish data

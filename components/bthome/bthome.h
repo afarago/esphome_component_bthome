@@ -67,8 +67,8 @@ public:
   }
 
 protected:
-  bthomelib::BTProtoVersion_e parse_header_(const esp32_ble_tracker::ServiceData &service_data);
-  bool parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, bthomelib::BTProtoVersion_e proto);
+  bthome_base::BTProtoVersion_e parse_header_(const esp32_ble_tracker::ServiceData &service_data);
+  bool parse_message_bthome_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, bthome_base::BTProtoVersion_e proto);
   void report_measurement_(uint8_t measurement_type, float value, uint64_t address, BTHomeDevice *btdevice);
 
 private:

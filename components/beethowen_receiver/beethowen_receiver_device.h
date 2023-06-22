@@ -8,16 +8,16 @@
 
 #include "esphome/core/component.h"
 
-#include "beethowen_common.h"
-#include "beethowen_basesensor.h"
-#include "beethowen_sensor.h"
+#include "beethowen_receiver_common.h"
+#include "beethowen_receiver_basesensor.h"
+#include "beethowen_receiver_sensor.h"
 
 namespace esphome
 {
-  namespace beethowen
+  namespace beethowen_receiver
   {
 
-    class BeethowenDevice : public Component
+    class BeethowenReceiverDevice : public Component
     {
     public:
       inline uint64_t get_address() { return this->address_; };
@@ -34,7 +34,7 @@ namespace esphome
         return (this->address_ == mac_address);
       }
 
-      void register_sensor(BeethowenBaseSensor *sensor)
+      void register_sensor(BeethowenReceiverBaseSensor *sensor)
       {
         this->my_sensors.push_back(sensor);
       }
@@ -43,7 +43,7 @@ namespace esphome
       DumpOption_e dump_option_{DumpOption_None};
       uint64_t address_{0};
 
-      std::vector<BeethowenBaseSensor *> my_sensors;
+      std::vector<BeethowenReceiverBaseSensor *> my_sensors;
     };
 
   }

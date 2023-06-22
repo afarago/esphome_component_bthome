@@ -14,7 +14,7 @@
 
 #include "bthome_parser.h"
 
-namespace bthome_lib
+namespace bthome_base
 {
 
   typedef enum
