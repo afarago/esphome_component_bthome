@@ -1,5 +1,5 @@
 /*
- Beethowen BTHome over ESPNow virtual sensors for ESPHome
+ BTHome protocol virtual sensors for ESPHome
 
  Author: Attila Farago
  */
@@ -9,18 +9,19 @@
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 
-#include "beethowen_receiver_basesensor.h"
+#include "bthome_receiver_base_basesensor.h"
 
 #include <vector>
 #include <map>
 
 namespace esphome
 {
-  namespace beethowen_receiver
+  namespace bthome_receiver_base
   {
+    using namespace std;
 
-    class BeethowenReceiverSensor : public sensor::Sensor,
-                                    public BeethowenReceiverBaseSensor
+    class BTHomeReceiverBaseSensor : public sensor::Sensor,
+                                     public BTHomeReceiverBaseBaseSensor
     {
 
       void publish_data(float value) override

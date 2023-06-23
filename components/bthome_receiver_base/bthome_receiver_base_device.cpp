@@ -1,27 +1,27 @@
 /*
- Beethowen BTHome over ESPNow virtual sensors for ESPHome
+ BTHome protocol virtual sensors for ESPHome
 
  Author: Attila Farago
  */
 
-#include "beethowen_receiver_device.h"
+#include "bthome_receiver_base_device.h"
 
 using namespace std;
 
 namespace esphome
 {
-  namespace beethowen_receiver
+  namespace bthome_receiver_base
   {
 
-    static const char *const TAG = "beethowen_receiver";
+    static const char *const TAG = "bthome_receiver_base";
 
-    void BeethowenReceiverDevice::dump_config()
+    void BTHomeReceiverBaseDevice::dump_config()
     {
       ESP_LOGCONFIG(TAG, "address 0x%X", this->address_);
       ESP_LOGCONFIG(TAG, "dump_option %d", this->dump_option_);
     }
 
-    bool BeethowenReceiverDevice::report_measurement_(uint8_t measurement_type, float value)
+    bool BTHomeReceiverBaseDevice::report_measurement_(uint8_t measurement_type, float value)
     {
 
       // got a measurement --> look for matching sensors and publish data

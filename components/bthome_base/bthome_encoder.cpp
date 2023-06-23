@@ -23,6 +23,7 @@ namespace bthome_base
     this->m_sensorDataIdx = 0;
     this->last_object_id = 0;
     this->m_sortEnable = false;
+    this->m_count = 0;
   }
 
   void BTHomeEncoder::addMeasurement_state(uint8_t sensor_id, uint8_t state, uint8_t steps)
@@ -30,6 +31,7 @@ namespace bthome_base
     // if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
     if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) <= (MEASUREMENT_MAX_LEN))
     {
+      this->m_count++;
       this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
       this->m_sensorDataIdx++;
       this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(state & 0xff);
@@ -59,6 +61,7 @@ namespace bthome_base
     // if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
     if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN))
     {
+      this->m_count++;
       this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
       this->m_sensorDataIdx++;
       for (uint8_t i = 0; i < size; i++)
@@ -86,6 +89,7 @@ namespace bthome_base
     // if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
     if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN))
     {
+      this->m_count++;
       uint64_t value2 = static_cast<uint64_t>(value * factor);
       this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
       this->m_sensorDataIdx++;

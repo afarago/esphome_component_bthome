@@ -46,19 +46,30 @@ typedef std::function<void(uint8_t meas_typ, float value)> esp_rc_data_callback_
 		// bthomeencoder->m_sensorData
 		
 -- esphome encoder
-		beethowen: (all sending sensors are registered)
-		  server_mac: 22:33:44:55:66:77
-		role: source
-		  # server_mac: auto_find
+		beethowen_transmitter: (all sending sensors are registered)
+			# server_mac: auto_find
+			persistent: true
+			id: my_beethowen_transmitter
+			sensors:
+				- measurement_type: temperature
+				  sensor_id: bmp085_temperature_sensor
 		
 		sensor:
-		  - platform: beethowen
-			id: beethowen_testdevice_temperature
-			name: Temperature
-			measurement_type: temperature
-			lambda: |-
-				auto value = id(bmp085_temperature_sensor).state;
-				return value;
+			- platform: beethowen
+				id: beethowen_testdevice_temperature
+				name: Temperature
+				measurement_type: temperature
+				lambda: |-
+					auto value = id(bmp085_temperature_sensor).state;
+					return value;
+
+			- platform: bmp085
+				temperature:
+					id: bmp085_temperature_sensor
+					internal: true
+					filters:
+						- lambda: |-
+						    id(my_beethowen_transmitter).register_reading(id(bmp085_temperature_sensor), 0x02, x)
 		
 		script:
 		  - id: update_and_send_data
@@ -76,3 +87,8 @@ extern APIServer *global_api_server;  // NOLINT(cppcoreguidelines-avoid-non-cons
 -- Home Assistant parser integration
 with service to send data / proxy data to
 esp add beethowen "server" component option to proxy all incoming data to HA
+
+
+-----------
+
+- add channelid to found response

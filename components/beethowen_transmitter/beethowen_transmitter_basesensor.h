@@ -12,14 +12,15 @@ namespace esphome
 {
   namespace beethowen_transmitter
   {
-    class BeethowenTransmitterBaseSensor : public Component
+    class BeethowenTransmitterBaseSensor 
     {
     public:
-      float get_setup_priority() const override { return setup_priority::DATA; }
-      void dump_config() override;
-
       uint8_t get_measurement_type() { return this->measurement_type_; };
       void set_measurement_type(uint8_t measurement_type) { measurement_type_ = measurement_type; };
+      virtual bool is_binary() = 0;
+
+    protected:
+      void dump_config_base();
 
     private:
       uint8_t measurement_type_{0};

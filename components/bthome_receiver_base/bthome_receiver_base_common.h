@@ -1,6 +1,5 @@
 /*
- Beethowen
- Beethowen over ESPNow virtual sensors for ESPHome
+ BTHome protocol virtual sensors for ESPHome
 
  Author: Attila Farago
  */
@@ -11,13 +10,15 @@
 
 namespace esphome
 {
-  namespace beethowen_receiver
+  namespace bthome_receiver_base
   {
+
     typedef enum
     {
       DumpOption_None = 0,
       DumpOption_Unmatched = 1,
       DumpOption_All = 2
     } DumpOption_e;
+
   }
 }

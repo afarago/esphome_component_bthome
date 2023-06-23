@@ -15,10 +15,9 @@ namespace esphome
   {
     static const char *const TAG = "beethowen_transmitter";
 
-    void BeethowenTransmitterBaseSensor::dump_config()
+    void BeethowenTransmitterBaseSensor::dump_config_base()
     {
       ESP_LOGCONFIG(TAG, "measurement_type 0x%X", this->measurement_type_);
     }
-
   }
 }

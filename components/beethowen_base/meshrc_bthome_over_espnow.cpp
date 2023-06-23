@@ -11,6 +11,9 @@
 
 #include "meshrc_bthome_over_espnow.h"
 
+// #include "esphome\core\log.h"
+// using namespace esphome;
+
 namespace beethowen_base
 {
 
@@ -67,6 +70,8 @@ namespace beethowen_base
 		sending = true;
 		sendTime = micros();
 		bool success = false;
+		sending_success = false;
+		// ESP_LOGD("custom", "meshRC send");
 		if (esp_now_is_init)
 		{
 			success = (esp_now_send(dest ? dest : broadcast, data, size) == OK); // TODO; ESP32 has ESP_OK
@@ -237,7 +242,7 @@ namespace beethowen_base
 		}
 		if (sendStatus == 1)
 		{
-			// ESP_LOGD("custom", "meshRC message not succesfully sent");
+			// ESP_LOGD("custom", "meshRC message not succesfully sent %d", sendStatus);
 			sent_error++;
 		}
 		sending_success = sendStatus == 0;

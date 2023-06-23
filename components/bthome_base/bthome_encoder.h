@@ -114,6 +114,7 @@ namespace bthome_base
     void addMeasurement_state(uint8_t sensor_id, uint8_t state, uint8_t steps = 0);
     void addMeasurement(uint8_t sensor_id, uint64_t value);
     void addMeasurement(uint8_t sensor_id, float value);
+    uint8_t get_count() { return m_count; }
 
   private:
     uint8_t getByteNumber(uint8_t sens);
@@ -123,6 +124,7 @@ namespace bthome_base
     void sortSensorData();
     bool m_sortEnable;
     uint8_t last_object_id;
+    uint8_t m_count{0};
   };
 
 }

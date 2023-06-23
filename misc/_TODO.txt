@@ -3,3 +3,10 @@
 + HA proxy and integration
 
 
+- add channelid to found response, maybe add random key for req-response
+
+- separate beethowen specific things from espnow header
+
+- simplify transmitter code to enum from defines, unify with receiver
+
+- add example yamls
