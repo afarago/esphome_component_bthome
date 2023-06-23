@@ -166,7 +166,7 @@ def beethowen_shared_sensor_configs(is_binary_sensor, MEASUREMENT_TYPES):
                     and not "accuracy_decimals" in config
                 ):
                     cg.add(
-                        config.set_accuracy_decimals(
+                        var_item.set_accuracy_decimals(
                             measurement_type_record["accuracy_decimals"]
                         )
                     )
@@ -175,7 +175,7 @@ def beethowen_shared_sensor_configs(is_binary_sensor, MEASUREMENT_TYPES):
                     and not "unit_of_measurement" in config
                 ):
                     cg.add(
-                        config.set_unit_of_measurement(
+                        var_item.set_unit_of_measurement(
                             measurement_type_record["unit_of_measurement"]
                         )
                     )
@@ -184,13 +184,13 @@ def beethowen_shared_sensor_configs(is_binary_sensor, MEASUREMENT_TYPES):
                     and not "device_class" in config
                 ):
                     cg.add(
-                        config.set_device_class(measurement_type_record["device_class"])
-                    )
-                else:
-                    cg.add(
-                        var_item.set_measurement_type(
-                            config_item[CONF_MEASUREMENT_TYPE]
+                        var_item.set_device_class(
+                            measurement_type_record["device_class"]
                         )
                     )
+            else:
+                cg.add(
+                    var_item.set_measurement_type(config_item[CONF_MEASUREMENT_TYPE])
+                )
 
     return CONFIG_SCHEMA, to_code
