@@ -1,14 +1,15 @@
 ESP32 BTHome Receiver
 =====================
 
-BTHome is an energy efficient but flexible BLE (Bluetooth Low Energy) format for devices to 
+**BTHome** is an energy efficient but flexible BLE (Bluetooth Low Energy) format for devices to 
 broadcast their sensor data and  button presses. Devices can run over a year on a single battery.
 It allows data encryption and is supported by popular home automation platforms, 
 like `Home Assistant <https://www.home-assistant.io>`__, out of the box.
 
 This component implements local reception and decoding without the need of a central hub.
 
-Note: as for now supports V1 and V2 unencryted formats.
+Note: as for now this component is limited to V1 and V2 unencryted formats.
+Encryption support might be implemented later on.
 
 .. code-block:: yaml
 
@@ -18,7 +19,8 @@ Note: as for now supports V1 and V2 unencryted formats.
     
     esp32_ble_tracker:
 
-    bthome:
+    bthome_receiver:
+      dump: unmatched
 
     sensor:
       - platform: bthome
@@ -46,20 +48,20 @@ Note: as for now supports V1 and V2 unencryted formats.
         name_prefix: BTHome Living Room
         sensors:
           - measurement_type: opening
-            name: BTHome Opening Garazs
+            name: BTHome Opening Garage
 
 .. _bthome-component:
 
 Component/Hub
 -------------
 
-The ``bthome`` component creates a global hub so that you can track bluetooth low
+The ``bthome_receiver`` component creates a global hub so that you can track bluetooth low
 energy devices using your ESP32 node over the BTHome protocol using both v1 and v2 protocols.
 
-The component depends on the esp32_ble_tracker component which needs to be added to the 
+The component depends on the ``esp32_ble_tracker`` component which needs to be added to the 
 configuration.
 
-The bthome component is an internal model that acts as a central reception 
+The bthome receiver component is an internal model that acts as a central reception 
 and dispatcher hub to which bthome virtual devices and sensors are connected to.
 
 .. _config-bthome:
@@ -67,7 +69,8 @@ and dispatcher hub to which bthome virtual devices and sensors are connected to.
 Configuration variables:
 ************************
 
-- **dump** (*Optional*): Decode and dumpincoming remote readings codes in the logs (at log.level=DEBUG) for any device.
+- **dump** (*Optional*): Decode and dumpincoming remote readings codes in the logs 
+  (at log.level=DEBUG) for any device.
   
   - **all**: Decode and dump all readings.
   - **unmatched**: Decode and dump readings that are not mapped in configuration.
@@ -122,7 +125,8 @@ Configuration variables:
 
 - **name_prefix** (*Optional*): Device name to append before any sensor name as a prefix.
 
-- **dump** (*Optional*): Decode and dump incoming remote readings codes in the logs (at log.level=DEBUG) for this device.
+- **dump** (*Optional*): Decode and dump incoming remote readings codes in the logs 
+  (at log.level=DEBUG) for this device.
   
   - **all**: Decode and dump all readings.
   - **unmatched**: Decode and dump readings that are not mapped in configuration.
@@ -134,7 +138,10 @@ Configuration variables:
   
   - **name** (*Optional*): The name for the sensor. At least one of **id** and **name** must be specified.
 
-  - **measurement_type** (*Required*, int **or** string): Measurement type as defined in `BTHome format specification <https://bthome.io/format>`__ either as a string or a numeric value. If selected by name (string) the accuracy and unit of measurement are automatically defaulted to the correct values.
+  - **measurement_type** (*Required*, int **or** string): Measurement type as defined in 
+    `BTHome format specification <https://bthome.io/format>`__ either as a string or a numeric value. 
+    If selected by name (string) the accuracy and unit of measurement are automatically defaulted to the 
+    correct values.
 
 See Also
 --------
