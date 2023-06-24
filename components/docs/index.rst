@@ -28,6 +28,13 @@ ESP-NOW channel.
   configuration files and control them remotely through Home Automation systems using fast-paced
   low-code development in YAML files.
 
+Overview
+========
+
+|overview_image|
+
+.. |overview_image| image:: bthome_and_beethowen.drawio.png
+
 Further development ideas
 =========================
 

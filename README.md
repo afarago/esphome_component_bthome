@@ -33,3 +33,5 @@ The installation procedure for external components is described [here](https://e
 
     See also: [BTHome protocol](https://bthome.io/) over [ESP-NOW communication protocol](https://www.espressif.com/en/solutions/low-power-solutions/esp-now)
 
+## Overview
+![Overview](components/docs/bthome_and_beethowen.drawio.png) 
