@@ -45,10 +45,10 @@ Encryption support might be implemented later on.
     binary_sensor:
       - platform: bthome
         mac_address: 11:22:33:44:55:55
-        name_prefix: BTHome Living Room
+        name_prefix: BTHome Garage
         sensors:
           - measurement_type: opening
-            name: BTHome Opening Garage
+            name: Opening
 
 .. _bthome-component:
 

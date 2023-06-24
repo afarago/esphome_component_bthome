@@ -30,6 +30,17 @@ This component implements local trasmitter and encoding hub.
       name: $systemName
       libraries:
         - ESP8266WiFi
+      on_loop:
+      then:
+        - lambda: |-
+            static bool update_requested = false;
+            if (!update_requested) {
+              id(my_bmp085).update();
+              update_requested = true;
+            } else if (id(bmp085_temperature_sensor).has_state()) {
+              id(my_beethowen_transmitter).transmit();
+              id(my_deep_sleep).begin_sleep(true);
+            }
 
     beethowen_transmitter:
       id: my_beethowen_transmitter
@@ -47,6 +58,11 @@ This component implements local trasmitter and encoding hub.
         temperature:
           id: bmp085_temperature_sensor
           internal: true
+
+    deep_sleep:
+      run_duration: 20s # max run duration for safeguarding
+      sleep_duration: 60s
+      id: my_deep_sleep
 
 .. _beethowen-component:
 
