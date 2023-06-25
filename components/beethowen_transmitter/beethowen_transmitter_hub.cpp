@@ -15,8 +15,8 @@
 #include "esphome/components/beethowen_base/beethowen_base_common.h"
 #include "esphome/components/beethowen_base/meshrc_bthome_over_espnow.h"
 
-#include "beethowen_transmitter_basesensor.h"
-#include "beethowen_transmitter_sensor.h"
+#include "esphome/components/beethowen_base/meshrc_bthome_over_espnow.h"
+
 #include "beethowen_transmitter_hub.h"
 
 using namespace std;
@@ -37,7 +37,7 @@ namespace esphome
         // wifi_set_channel(id(server_channel));
         // wifi_promiscuous_enable(0);
 
-        connect_to_wifi(server_channel_, connect_persistent_); 
+        connect_to_wifi(server_channel_, connect_persistent_);
       }
       else
       {
@@ -79,7 +79,7 @@ namespace esphome
             server_channel_ = 1;
           last_find_millis = now;
 
-          connect_to_wifi(server_channel_, connect_persistent_); 
+          connect_to_wifi(server_channel_, connect_persistent_);
 
           ESP_LOGD(TAG, "trying to find server on channel %d", server_channel_);
           beethowen_base::send_find(beethowen_base::broadcast);
@@ -99,21 +99,13 @@ namespace esphome
       bthome_base::BTHomeEncoder encoder;
       encoder.resetMeasurement();
 
-      for (auto btsensor : my_sensors)
+      bool has_outstanding_measurements = false;
+      for (auto btsensor_struct : my_sensors)
       {
-        if (!btsensor->is_binary())
-        {
-          BeethowenTransmitterSensor *btsensor_sensor = (BeethowenTransmitterSensor *)btsensor;
-          if (btsensor_sensor)
-          {
-            if (btsensor_sensor->has_state())
-            {
-              // ESP_LOGD(TAG, "add sensor: %u.", btsensor->get_measurement_type());
-              encoder.addMeasurement(btsensor->get_measurement_type(), btsensor_sensor->get_state());
-            }
-          }
-        }
-        // TODO: Add binary sensor
+        if (has_sensor_state(btsensor_struct))
+          encoder.addMeasurement(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
+        else
+          has_outstanding_measurements = true;
       }
 
       bool success = false;
@@ -143,11 +135,9 @@ namespace esphome
         // invalidate server found
         server_found_ = false;
       }
-      else
-      {
-        ESP_LOGV(TAG, "Beethowen send success.");
-      }
-    }
 
+      ESP_LOGD(TAG, "Sending finished {success} %d, {has_outstanding_measurements} %d, {count} %d", success, has_outstanding_measurements, encoder.get_count());
+      this->on_finished_send_callback_.call(success, has_outstanding_measurements);
+    }
   }
 }

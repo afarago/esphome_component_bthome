@@ -11,8 +11,9 @@
 #include <map>
 
 #include "esphome/core/component.h"
-
-#include "beethowen_transmitter_basesensor.h"
+#include "esphome/core/automation.h"
+#include "esphome/components/sensor/sensor.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
 
 namespace esphome
 {
@@ -44,14 +45,22 @@ namespace esphome
 
       float get_setup_priority() const override { return setup_priority::DATA; }
 
-      void register_sensor(BeethowenTransmitterBaseSensor *sensor) { this->my_sensors.push_back(sensor); }
+      void add_sensor(uint8_t measurement_type, sensor::Sensor *sensor) { my_sensors.push_back({measurement_type, sensor, nullptr}); }
+      void add_binary_sensor(uint8_t measurement_type, binary_sensor::BinarySensor *binary_sensor) { my_sensors.push_back({measurement_type, nullptr, binary_sensor}); }
 
       void transmit();
+
+      void add_on_finished_send_callback(std::function<void(bool, bool)> callback)
+      {
+        this->on_finished_send_callback_.add(std::move(callback));
+      }
 
     protected:
       void beethowen_on_command_(uint8_t command);
       bool is_server_found() { return this->server_found_; }
       void connect_to_wifi(uint8_t channel, bool persistent);
+
+      CallbackManager<void(bool, bool)> on_finished_send_callback_;
 
     private:
       uint64_t server_address_{0};
@@ -61,7 +70,42 @@ namespace esphome
       bool connect_persistent_{false};
       uint32_t last_find_millis = 0;
 
-      std::vector<BeethowenTransmitterBaseSensor *> my_sensors;
+      struct BTHomeTypedSensor
+      {
+        uint8_t measurement_type;
+        sensor::Sensor *sensor;
+        binary_sensor::BinarySensor *binary_sensor;
+      };
+
+      bool has_sensor_state(BTHomeTypedSensor sensor_struct)
+      {
+        if (sensor_struct.sensor)
+          return sensor_struct.sensor->has_state();
+        if (sensor_struct.binary_sensor)
+          return sensor_struct.binary_sensor->has_state();
+        return false;
+      }
+
+      optional<float> get_sensor_state(BTHomeTypedSensor sensor_struct)
+      {
+        if (sensor_struct.sensor && sensor_struct.sensor->has_state())
+          return sensor_struct.sensor->get_state();
+        if (sensor_struct.binary_sensor->has_state())
+          return sensor_struct.binary_sensor->state;
+        return nullopt;
+      }
+
+      std::vector<BTHomeTypedSensor> my_sensors;
+    };
+
+    class FinishedSendTrigger : public Trigger<bool, bool>
+    {
+    public:
+      explicit FinishedSendTrigger(BeethowenTransmitterHub *parent)
+      {
+        parent->add_on_finished_send_callback([this](bool success, bool has_outstanding_measurements)
+                                              { this->trigger(success, has_outstanding_measurements); });
+      }
     };
   }
 }

@@ -16,7 +16,7 @@ from esphome.const import (
     CONF_MAC_ADDRESS,
 )
 from esphome.core import CORE, coroutine_with_priority
-from esphome.components.bthome_receiver_base.const import (
+from esphome.components.bthome_base.const import (
     MEASUREMENT_TYPES_SENSOR,
     MEASUREMENT_TYPES_BINARY_SENSOR,
 )

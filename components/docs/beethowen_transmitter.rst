@@ -45,19 +45,24 @@ This component implements local trasmitter and encoding hub.
     beethowen_transmitter:
       id: my_beethowen_transmitter
       connect_persistent: true
-  
-    sensor:
-      - platform: beethowen_transmitter
-        name: Beethowen TestDevice Temperature
-        measurement_type: temperature
-        lambda: |-
-          return id(bmp085_temperature_sensor).state;
+      sensors:
+        - measurement_type: temperature
+          sensor_id: bmp085_temperature_sensor
+        - measurement_type: pressure
+          sensor_id: bmp085_pressure_sensor
+      # auto_send: true # should check if all sensors have state // not outstanding reads then send it automatically ##TODO, defaults to true, now it is always there
+      on_finished_send:
+        - lambda: |-
+            ESP_LOGD("app", "on_finished_send lambda");
+            id(my_deep_sleep).begin_sleep(true);
 
+    sensor:
       - platform: bmp085
         id: my_bmp085
         temperature:
           id: bmp085_temperature_sensor
-          internal: true
+        pressure:
+          id: bmp085_pressure_sensor
 
     deep_sleep:
       run_duration: 20s # max run duration for safeguarding
@@ -96,6 +101,7 @@ Configuration variables:
 
 - **id** (*Optional*): Manually specify the ID for this Hub.
 
+DOCUMENTATION TO BE UPDATED
 
 .. _bthome-sensor:
 
