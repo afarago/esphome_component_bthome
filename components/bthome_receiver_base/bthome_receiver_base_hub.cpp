@@ -50,9 +50,9 @@ namespace esphome
 #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
       // log incoming packet
       std::string serviceData = "";
-      for (auto i = 0; i < size; i++)
-        serviceData += str_snprintf("%02X ", 3, data[i]);
-      ESP_LOGV(TAG, "DATA received - %s = %s", bthome_base::addr64_to_str(beethowen_base::sender).c_str(), serviceData.c_str());
+      for (auto i = 0; i < payload_length; i++)
+        serviceData += str_snprintf("%02X ", 3, payload_data[i]);
+      ESP_LOGV(TAG, "DATA received - %s = %s", bthome_base::addr64_to_str(address).c_str(), serviceData.c_str());
 #endif // ESPHOME_LOG_LEVEL_VERBOSE
 
       // parse the payload and report measurements in the callback, will be fixing this to V2
