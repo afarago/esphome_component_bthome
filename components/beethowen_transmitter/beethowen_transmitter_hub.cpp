@@ -94,7 +94,7 @@ namespace esphome
 
     void BeethowenTransmitterHub::connect_to_wifi(uint8_t channel, bool persistent)
     {
-      ESL_LOGD(TAG, "connect_to_wifi channel {channel}, persistent {persistent}")
+      // ESP_LOGD(TAG, "connect_to_wifi channel {channel}, persistent {persistent}")
       WiFi.disconnect();
       beethowen_base::setupwifi(channel, persistent);
       beethowen_base::begin();
