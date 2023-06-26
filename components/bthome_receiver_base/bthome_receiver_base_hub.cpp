@@ -43,6 +43,12 @@ namespace esphome
 
     void BTHomeReceiverBaseHub::parse_message_bthome_(const uint64_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
     {
+      //TODO: should do a loop here instead of finding the right device and stopping
+      // for (auto btdevice_i : this->my_devices)
+      //   if (btdevice_i->match(address))
+      //     return btdevice_i;
+
+
       auto *btdevice = get_device_by_address(address);
       if (!btdevice && this->get_dump_option() == DumpOption_None)
         return;

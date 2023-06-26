@@ -19,13 +19,17 @@ from esphome.components.bthome_base.const import (
     MEASUREMENT_TYPES_BINARY_SENSOR,
 )
 
-CONF_Beethowen_ID = "Beethowen_ID"
+CONF_BeethowenTransmitterHub_ID = "BeethowenTransmitterHub_ID"
 CONF_MEASUREMENT_TYPE = "measurement_type"
 CONF_CONNECT_PERSISTENT = "connect_persistent"
 CONF_SENSORS = "sensors"
 CONF_AUTO_SEND = "auto_send"
+CONF_LOCAL_PASSKEY = "local_passkey"
+CONF_REMOTE_EXPECTED_PASSKEY = "remote_expected_passkey"
 CONF_SENSOR_SENSOR_ID = "sensor_id"
-CONF_ON_FINISHED_SEND = "on_finished_send"
+CONF_ON_SEND_FINISHED = "on_send_finished"
+CONF_ON_SEND_FAILED = "on_send_failed"
+CONF_COMPLETE_SEND = "complete_send"
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = []
@@ -41,10 +45,13 @@ BeethowenTransmitterSensor = beethowen_transmitter_ns.class_(
 BeethowenTransmitterBinarySensor = beethowen_transmitter_ns.class_(
     "BeethowenTransmitterBinarySensor", cg.Component, binary_sensor.BinarySensor
 )
-FinishedSendTrigger = beethowen_transmitter_ns.class_(
-    "FinishedSendTrigger ", automation.Trigger.template(bool, bool)
+SendFinishedTrigger = beethowen_transmitter_ns.class_(
+    "SendFinishedTrigger", automation.Trigger.template(bool)
 )
-# PlayAction = rtttl_ns.class_("PlayAction", automation.Action)
+SendFailedTrigger = beethowen_transmitter_ns.class_(
+    "SendFailedTrigger", automation.Trigger.template()
+)
+SendAction = beethowen_transmitter_ns.class_("SendAction", automation.Action)
 
 
 def validate_proxy_id(value):
@@ -83,23 +90,47 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(): cv.declare_id(BeethowenTransmitterHub),
             cv.Optional(CONF_CONNECT_PERSISTENT): cv.boolean,
             cv.Optional(CONF_AUTO_SEND): cv.boolean,
-            cv.Optional(CONF_ON_FINISHED_SEND): automation.validate_automation(
+            cv.Optional(CONF_LOCAL_PASSKEY): cv.hex_uint16_t,
+            cv.Optional(CONF_REMOTE_EXPECTED_PASSKEY): cv.hex_uint16_t,
+            cv.Optional(CONF_ON_SEND_FINISHED): automation.validate_automation(
                 {
-                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(FinishedSendTrigger),
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SendFinishedTrigger),
+                }
+            ),
+            cv.Optional(CONF_ON_SEND_FAILED): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SendFailedTrigger),
                 }
             ),
             cv.Required(CONF_SENSORS): cv.All(
                 cv.ensure_list(
-                    cv.Schema(
-                        {
-                            cv.GenerateID(): cv.declare_id(BeethowenTransmitterSensor),
-                            cv.Required(
-                                CONF_MEASUREMENT_TYPE
-                            ): validate_sensor_measurement_type,
-                            cv.Required(CONF_SENSOR_SENSOR_ID): cv.use_id(
-                                sensor.Sensor
-                            ),
-                        }
+                    cv.Any(
+                        cv.Schema(
+                            {
+                                cv.GenerateID(): cv.declare_id(
+                                    BeethowenTransmitterSensor
+                                ),
+                                cv.Required(
+                                    CONF_MEASUREMENT_TYPE
+                                ): validate_sensor_measurement_type,
+                                cv.Required(CONF_SENSOR_SENSOR_ID): cv.use_id(
+                                    sensor.Sensor
+                                ),
+                            }
+                        ),
+                        cv.Schema(
+                            {
+                                cv.GenerateID(): cv.declare_id(
+                                    BeethowenTransmitterSensor
+                                ),
+                                cv.Required(
+                                    CONF_MEASUREMENT_TYPE
+                                ): validate_binary_sensor_measurement_type,
+                                cv.Required(CONF_SENSOR_SENSOR_ID): cv.use_id(
+                                    binary_sensor.BinarySensor
+                                ),
+                            }
+                        ),
                     )
                 )
             ),
@@ -114,6 +145,12 @@ async def to_code(config):
 
     if CONF_CONNECT_PERSISTENT in config:
         cg.add(var.set_connect_persistent(config[CONF_CONNECT_PERSISTENT]))
+    if CONF_AUTO_SEND in config:
+        cg.add(var.set_auto_send(config[CONF_AUTO_SEND]))
+    if CONF_LOCAL_PASSKEY in config:
+        cg.add(var.set_local_passkey(HexInt(config[CONF_LOCAL_PASSKEY])))
+    if CONF_REMOTE_EXPECTED_PASSKEY in config:
+        cg.add(var.set_remote_expected_passkey(HexInt(config[CONF_REMOTE_EXPECTED_PASSKEY])))
 
     for config_item in config.get(CONF_SENSORS, []):
         sensor = await cg.get_variable(config_item[CONF_SENSOR_SENSOR_ID])
@@ -124,27 +161,26 @@ async def to_code(config):
 
         cg.add(var.add_sensor(HexInt(measurement_type), sensor))
 
-    for conf in config.get(CONF_ON_FINISHED_SEND, []):
+    for conf in config.get(CONF_ON_SEND_FINISHED, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(
-            trigger, [(bool, "success"), (bool, "has_outstanding_measurements")], conf
+            trigger, [(bool, "has_outstanding_measurements")], conf
         )
+    for conf in config.get(CONF_ON_SEND_FAILED, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(trigger, [], conf)
 
 
-# @automation.register_action(
-#     "rtttl.play",
-#     PlayAction,
-#     cv.maybe_simple_value(
-#         {
-#             cv.GenerateID(CONF_ID): cv.use_id(Rtttl),
-#             cv.Required(CONF_RTTTL): cv.templatable(cv.string),
-#         },
-#         key=CONF_RTTTL,
-#     ),
-# )
-# async def rtttl_play_to_code(config, action_id, template_arg, args):
-#     paren = await cg.get_variable(config[CONF_ID])
-#     var = cg.new_Pvariable(action_id, template_arg, paren)
-#     template_ = await cg.templatable(config[CONF_RTTTL], args, cg.std_string)
-#     cg.add(var.set_value(template_))
-#     return var
+@automation.register_action(
+    "beethowen_transmitter.send",
+    SendAction,
+    automation.maybe_simple_id(
+        {
+            cv.GenerateID(CONF_ID): cv.use_id(BeethowenTransmitterHub),
+            cv.Optional(CONF_COMPLETE_SEND, default=False): cv.templatable(cv.boolean),
+        }
+    ),
+)
+async def beethowen_transmitter_send_to_code(config, action_id, template_arg, args):
+    paren = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, paren)

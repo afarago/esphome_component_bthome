@@ -23,12 +23,12 @@ beethowen
 void on(esp_rc_callback_t callback) {
 
 
-0xD2, 0xFC, 0x80 <BTHOME> data packet
-0xD2, 0xFD, 0x01 == find server
-0xD2, 0xFD, 0x02 == server found (empty)
+0xD2, 0xFC, 0x40 <BTHOME> data packet
+//0xD2, 0xFD, 0x01 == find server
+//0xD2, 0xFD, 0x02 == server found (empty)
 
 // upon packet arrival check and return (data+3) ptr
-// check V2 header 2 bytes + sw_version 1 byte (adv_info) -- 0xD2, 0xFC, 0x80) --> ((0x80<<5&7) == 2 // 5-7 bits)
+// check V2 header 2 bytes + sw_version 1 byte (adv_info) -- 0xD2, 0xFC, 0x40) --> ((0x40<<5&7) == 2 // 5-7 bits)
 // max payload is 247 bytes
 typedef std::function<void(uint8_t* data)> esp_rc_data_callback_t;
 // after parsing
@@ -165,16 +165,20 @@ esp add beethowen "server" component option to proxy all incoming data to HA
 
 client->bcast:	0xD2FD, 0x01, 0xABCD 				== find server with passkey 0xABCD
 server->client:	0xD2FD, 0x02, 0xABCD, 0x0B 			== server found or channel 11
+server->client:	0xD2FD, 0xFF, 0xABCD, 0x22 			== error code 0x22 // e.g. unexpected client key
 
-server->client:	0xD2FD, 0x03, 0xABCD 				== start local OTA with pre-configured AP
-server->client:	0xD2FD, 0x03, 0xABCD, URL/nullterm 	== start local OTA with pre-configured AP
+//server->client:	0xD2FD, 0x03, 0xABCD 				== start local OTA with pre-configured AP
+//server->client:	0xD2FD, 0x03, 0xABCD, URL/nullterm 	== start local OTA with pre-configured AP
 
-client->server:	0xD2FD, 0xFF, 0x80, 0xABCD, <BTHomeData> == data packet
+//client->server:	0xD2FD, 0xFF, 0x40, 0xABCD, <BTHomeData> == data packet
 
-client->server:	0xD2FC, 0x80, 0xABCD, <BTHomeData>	== data packet
+client->server:	0xD2FC, 0x40, 0xABCD, <BTHomeData>	== data packet
 
 server->client:	0xD2FD, 0x00, 0xABCD				== request client system_info
 client->server:	0xD2FD, 0x00, 0xABCD, 0x00 [system_version], 0x01 [v1], 0x01 [system_name], 0x10 [len=16], "beethowen_remote" == response system_info
 
 //check: can I extend sensor.SENSOR_SCHEMA model with a field e.g. beethowen_measurement_type: temperature + modify def to_code? --? probably not
 
+TODO:
+- check passkey of server at transmitter
+- check passkey of transmitter at server 

@@ -39,7 +39,7 @@ class Generator(bthome_receiver_base.Generator):
         
         return var
 
-gen = Generator()
+gen = Generator(CONF_BTHomeReceiverHub_ID)
 CONFIG_SCHEMA, to_code = gen.generate_component_config()
 
 def generate_sensor_configs(is_binary_sensor):

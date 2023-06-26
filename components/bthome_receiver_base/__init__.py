@@ -21,7 +21,7 @@ from esphome.components.bthome_base.const import (
     MEASUREMENT_TYPES_BINARY_SENSOR,
 )
 
-CONF_BTHomeReceiverBaseHub_ID = "BTHomeReceiverBaseHub_ID"
+# CONF_BTHomeReceiverBaseHub_ID = "BTHomeReceiverBaseHub_ID"
 CONF_NAME_PREFIX = "name_prefix"
 CONF_DUMP_OPTION = "dump"
 CONF_SENSORS = "sensors"
@@ -47,6 +47,10 @@ DUMP_OPTION = {
 
 class Generator:
     hub_ = {}
+    hubid_ = {}
+
+    def __init__(self, hubid):
+        self.hubid_ = hubid
 
     def hub_factory(self):
         return bthome_receiver_base_ns.class_("BTHomeReceiverBaseHub", cg.Component)
@@ -138,7 +142,7 @@ class Generator:
         CONFIG_SCHEMA = cv.All(
             cv.Schema(
                 {
-                    cv.GenerateID(CONF_BTHomeReceiverBaseHub_ID): cv.use_id(
+                    cv.GenerateID(self.hubid_): cv.use_id(
                         self.get_hub()
                     ),
                     cv.GenerateID(): cv.declare_id(BTHomeReceiverBaseDevice),
@@ -165,12 +169,12 @@ class Generator:
         )
 
         async def to_code(config):
-            paren = await cg.get_variable(config[CONF_BTHomeReceiverBaseHub_ID])
+            paren = await cg.get_variable(config[self.hubid_])
             var = cg.new_Pvariable(config[CONF_ID])
             await cg.register_component(var, config)
 
             cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
-            cg.add(paren.register_device(var))
+            cg.add(paren.register_device(var)) ## problem -- what if already exists? ##TODO
 
             if CONF_DUMP_OPTION in config:
                 cg.add(var.set_dump_option(config[CONF_DUMP_OPTION]))

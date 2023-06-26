@@ -50,7 +50,7 @@ This component implements local trasmitter and encoding hub.
           sensor_id: bmp085_temperature_sensor
         - measurement_type: pressure
           sensor_id: bmp085_pressure_sensor
-      # auto_send: true # should check if all sensors have state // not outstanding reads then send it automatically ##TODO, defaults to true, now it is always there
+      auto_send: true
       on_finished_send:
         - lambda: |-
             ESP_LOGD("app", "on_finished_send lambda");
@@ -97,11 +97,17 @@ Note: some form of authentication or code-matching will be added soon.
 Configuration variables:
 ************************
 
-- **connect_persistent** (*Optional*): ESP8266 is able to reconnect to the last used Wi-Fi network or establishes the same Access Point upon power up or reset. By default, these settings are NOT written to specific sectors of flash memory every time they are changed. Frequently calling these functions could cause wear on the flash memory. See `WiFi library <https://arduino-esp8266.readthedocs.io/en/2.5.2/esp8266wifi/generic-class.html#persistent>`_ reference.
+- **id** (*Optional*, string): Manually specify the ID for this Hub.
 
-- **id** (*Optional*): Manually specify the ID for this Hub.
+- **connect_persistent** (*Optional*, boolean): ESP8266 is able to reconnect to the last used Wi-Fi network or establishes the same Access Point upon power up or reset. By default, these settings are NOT written to specific sectors of flash memory every time they are changed. Frequently calling these functions could cause wear on the flash memory. See `WiFi library <https://arduino-esp8266.readthedocs.io/en/2.5.2/esp8266wifi/generic-class.html#persistent>`_ reference.
 
-DOCUMENTATION TO BE UPDATED
+- **sensors** (*Optional*): Specify sensors to proxy through the beethowen channel. See :ref:`Proxy Sensors <beethowen-sensor_>` for more information.
+
+- **auto_send** (*Optional*, boolean): Regularly check all connected sensors and once all provide a valid state automatically send data.
+
+Automations
+***********
+- **on_finished_send** (*Optional*, Automation): An automation to perform when a transmission is finished.
 
 .. _bthome-sensor:
 
@@ -109,25 +115,47 @@ Sensor
 ------
 
 The ``beethowen transmitter sensor`` allows you use a sensor to collect and transfer data to a remote 
-Beethowen receiver hub.
-First, you need to define a :ref:`beethowen hub component <beethowen-component_>`.
+Beethowen receiver hub and are listed below the hub.
 
-The beethowen sensor component acts as a template sensor that receives data from other pyhiscal sensors.
+The beethowen sensor component acts as a proxy sensor that receives data from other pyhsical sensors.
 
 .. code-block:: yaml
 
-    # Example configuration entry
-    sensor:
-      - platform: beethowen_transmitter
-        name: Beethowen TestDevice Temperature
-        measurement_type: temperature
-        lambda: |-
-          return id(bmp085_temperature_sensor).state;
+  beethowen_transmitter:
+    sensors:
+      - measurement_type: temperature
+        sensor_id: bmp085_temperature_sensor
+      - measurement_type: pressure
+        sensor_id: bmp085_pressure_sensor
+
+Configuration variables:
+
+- **measurement_type** (*Required*, int **or** string): Measurement type as defined in 
+  `BTHome format specification <https://bthome.io/format>`__ either as a string or a numeric value.
+
+- **sensor_id** (*Required*, string): A sensor that is defined in the configuration. Its value will 
+  be retrieved and proxied through the beethowen channel.
+
+Sensor Automation
+-----------------
+
+on_finished_send
+~~~~~~~~~~~~~~~~
+This automation will be triggered when a transmission is finished though the beethowen channel.
+In Lambdas you can get the result and check if there are any outstanding measurements not yet transferred 
+with *success*, *has_outstanding_measurements*.
+
+
+Actions
+-------
+
+send
+~~~~
+This action collects all connected sensor data and sends them thorugh the beethowen channel.
 
 Warning
 -------
   
-* Supports value based sensors as for now, binary sensor support will be added shortly.
 * Supports ESP8266 is completed ESP32 support will be added shortly.
 
 See Also
@@ -135,4 +163,4 @@ See Also
 
 - `BTHome <https://bthome.io>`__ by Ernst Klamer, Victor, Paulus Schoutsen.
 - `ESP_NOW <https://www.espressif.com/en/solutions/low-power-solutions/esp-now>`__ by Espressif Systems.
-- `Passive BLE Monitor integration <https://github.com/custom-components/ble_monitor>`__ .
+- `Passive BLE Monitor integration <https://github.com/custom-components/ble_monitor>`__.

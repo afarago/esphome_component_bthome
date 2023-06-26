@@ -16,20 +16,11 @@
 
 namespace beethowen_base
 {
+	// Magic bytes 0xD2 0xFC 0x80
+	// flags: 0x80 stands for BTHome V2 (bits 5-7) //0x40
+	const uint8_t BEETHOWEN_MAGIC_DATA_HEADER[BEETHOWEN_MAGIC_HEADER_LEN] = {0xD2, 0xFC};
 
-// Magic bytes 0xD2 0xFC 0x80
-// 0x80 stands for BTHome V2 (bits 5-7)
-#define BEETHOWEN_MAGIC_HEADER_LEN 3
-	const uint8_t BEETHOWEN_MAGIC_DATA_HEADER[BEETHOWEN_MAGIC_HEADER_LEN] = {0xD2, 0xFC, 0x80};
-
-#define COMMAND_FIND_REQUEST 0x01
-#define COMMAND_FOUND_RESPONSE 0x02
-	const uint8_t BEETHOWEN_MAGIC_COMMAND_HEADER[BEETHOWEN_MAGIC_HEADER_LEN] = {0xD2, 0xFD, 0x00};
-
-// TODO: check, this should be av
-#define ESP_NOW_MAX_DATA_LEN 250
-#define MAX_BEETHOWEN_PAYLOAD_LENGTH (ESP_NOW_MAX_DATA_LEN - BEETHOWEN_MAGIC_HEADER_LEN)
-#define MAX_CALLBACKS 10
+	const uint8_t BEETHOWEN_MAGIC_COMMAND_HEADER[BEETHOWEN_MAGIC_HEADER_LEN] = {0xD2, 0xFD};
 
 	struct esp_rc_event_t
 	{
@@ -37,7 +28,7 @@ namespace beethowen_base
 		esp_rc_data_callback_t callback_data;
 	} events[MAX_CALLBACKS];
 
-	uint8_t buffer[ESP_NOW_MAX_DATA_LEN];
+	beethowen_data_packet_t buffer;
 	uint8_t broadcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 	uint8_t events_num = 0;
 	uint32_t sent_error = 0;
@@ -84,20 +75,24 @@ namespace beethowen_base
 		return success;
 	}
 
-	bool send_find(uint8_t *dest)
+	bool send_find(uint8_t *dest, uint8_t server_channel, uint16_t passkey)
 	{
-		memcpy(&buffer[0], BEETHOWEN_MAGIC_COMMAND_HEADER, BEETHOWEN_MAGIC_HEADER_LEN);
-		buffer[BEETHOWEN_MAGIC_HEADER_LEN - 1] = COMMAND_FIND_REQUEST;
+		memcpy(buffer.command_find_found.header, BEETHOWEN_MAGIC_COMMAND_HEADER, BEETHOWEN_MAGIC_HEADER_LEN);
+		buffer.command_find_found.command = COMMAND_FIND_REQUEST;
+		buffer.command_find_found.passkey = passkey;
+		buffer.command_find_found.server_channel = server_channel;
 
-		return send(dest, buffer, BEETHOWEN_MAGIC_HEADER_LEN);
+		return send(dest, buffer.raw, sizeof(beethowen_command_find_found_t));
 	}
 
-	bool send_command_found(uint8_t *dest)
+	bool send_command_found(uint8_t *dest, uint8_t server_channel, uint16_t passkey)
 	{
-		memcpy(&buffer[0], BEETHOWEN_MAGIC_COMMAND_HEADER, BEETHOWEN_MAGIC_HEADER_LEN);
-		buffer[BEETHOWEN_MAGIC_HEADER_LEN - 1] = COMMAND_FOUND_RESPONSE;
+		memcpy(buffer.command_find_found.header, BEETHOWEN_MAGIC_COMMAND_HEADER, BEETHOWEN_MAGIC_HEADER_LEN);
+		buffer.command_find_found.command = COMMAND_FOUND_RESPONSE;
+		buffer.command_find_found.passkey = passkey;
+		buffer.command_find_found.server_channel = server_channel;
 
-		return send(dest, buffer, BEETHOWEN_MAGIC_HEADER_LEN);
+		return send(dest, buffer.raw, sizeof(beethowen_command_find_found_t));
 	}
 
 	bool send_with_header(uint8_t *dest, uint8_t *data, uint8_t size)
@@ -105,12 +100,11 @@ namespace beethowen_base
 		if (size > MAX_BEETHOWEN_PAYLOAD_LENGTH)
 			return false;
 
-		// add header
-		memcpy(&buffer[0], BEETHOWEN_MAGIC_DATA_HEADER, BEETHOWEN_MAGIC_HEADER_LEN);
+		memcpy(buffer.data.header, BEETHOWEN_MAGIC_DATA_HEADER, BEETHOWEN_MAGIC_HEADER_LEN);
+		buffer.data.deviceinfo = 0x40;
+		memcpy(buffer.data.data, data, size);
 
-		// copy payload data
-		memcpy(&buffer[BEETHOWEN_MAGIC_HEADER_LEN], data, size);
-		return send(dest, buffer, size + BEETHOWEN_MAGIC_HEADER_LEN);
+		return send(dest, buffer.raw, size + BEETHOWEN_MAGIC_DATA_HEADER_LEN);
 	}
 
 	void on_data(esp_rc_data_callback_t callback)
@@ -263,12 +257,12 @@ namespace beethowen_base
 				if (equals(data, BEETHOWEN_MAGIC_DATA_HEADER, BEETHOWEN_MAGIC_HEADER_LEN))
 				{
 					if (events[i].callback_data)
-						events[i].callback_data(&data[BEETHOWEN_MAGIC_HEADER_LEN], size - BEETHOWEN_MAGIC_HEADER_LEN);
+						events[i].callback_data(&data[BEETHOWEN_MAGIC_DATA_HEADER_LEN], size - BEETHOWEN_MAGIC_DATA_HEADER_LEN);
 				}
-				else if (equals(data, BEETHOWEN_MAGIC_COMMAND_HEADER, BEETHOWEN_MAGIC_HEADER_LEN - 1))
+				else if (equals(data, BEETHOWEN_MAGIC_COMMAND_HEADER, BEETHOWEN_MAGIC_HEADER_LEN))
 				{
 					if (events[i].callback_command)
-						events[i].callback_command(data[BEETHOWEN_MAGIC_HEADER_LEN - 1]);
+						events[i].callback_command(data[BEETHOWEN_MAGIC_HEADER_LEN], data);
 				}
 			}
 		}

@@ -34,22 +34,34 @@ namespace esphome
       // setup wifinow hooks
       beethowen_base::on_data([&](uint8_t *data, uint8_t size)
                               { this->beethowen_on_data_(data, size); });
-      beethowen_base::on_command([&](uint8_t command)
-                                 { this->beethowen_on_command_(command); });
+      beethowen_base::on_command([&](uint8_t command, uint8_t *buffer)
+                                 { this->beethowen_on_command_(command, buffer); });
     }
 
-    void BeethowenReceiverHub::beethowen_on_command_(uint8_t command)
+    void BeethowenReceiverHub::beethowen_on_command_(uint8_t command, uint8_t *buffer)
     {
-
-#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
       ESP_LOGD(TAG, "Command received: %d, from: %s", command, bthome_base::addr_to_str(beethowen_base::sender).c_str());
-#endif // ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+#endif // ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
 
       if (command == beethowen_base::BeethowenCommand_FindServerRequest)
       {
+        auto buffer2 = (beethowen_base::beethowen_command_find_found_t *)buffer;
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+        ESP_LOGD(TAG, "Command received: %d, from: %s, channel: %d, passkey: %04X", command, bthome_base::addr_to_str(beethowen_base::sender).c_str(),
+                 buffer2->server_channel, buffer2->passkey);
+#endif // ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+
+        // validate remote passkey
+        if (remote_expected_passkey_ != 0 && buffer2->passkey != remote_expected_passkey_)
+        {
+          ESP_LOGD(TAG, "Invalid remote found, passkey does not match expected passkey");
+          // TODO: send error command with error code
+          return;
+        }
+
         uint8_t *client_mac = beethowen_base::sender;
-        // BeethowenCommand_FoundServerResponse
-        beethowen_base::send_command_found(client_mac);
+        beethowen_base::send_command_found(client_mac, buffer2->server_channel, buffer2->passkey);
       }
     }
 
