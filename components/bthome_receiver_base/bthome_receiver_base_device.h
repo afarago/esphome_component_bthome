@@ -23,6 +23,8 @@ namespace esphome
       void set_address(uint64_t address) { address_ = address; };
       DumpOption_e get_dump_option() { return this->dump_option_; };
       void set_dump_option(DumpOption_e value) { this->dump_option_ = value; };
+      std::string get_name_prefix() { return name_prefix_; };
+      void set_name_prefix(std::string value) { name_prefix_ = value; };
 
       void dump_config() override;
 
@@ -41,6 +43,7 @@ namespace esphome
     private:
       DumpOption_e dump_option_{DumpOption_None};
       uint64_t address_{0};
+      std::string name_prefix_{};
 
       std::vector<BTHomeReceiverBaseBaseSensor *> my_sensors;
     };

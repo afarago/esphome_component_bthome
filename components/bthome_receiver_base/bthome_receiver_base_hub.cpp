@@ -19,6 +19,25 @@ namespace esphome
   {
     static const char *const TAG = "bthome_receiver_base";
 
+    BTHomeReceiverBaseDevice *BTHomeReceiverBaseHub::add_sensor(BTHomeReceiverBaseDevice *btdevice, uint64_t address, BTHomeReceiverBaseBaseSensor *sensor)
+    {
+      if (!btdevice)
+      {
+        btdevice = get_device_by_address(address);
+      }
+      
+      if (!btdevice)
+      {
+        btdevice = new BTHomeReceiverBaseDevice();
+        btdevice->set_address(address);
+        register_device(address, btdevice);
+      }
+
+      // register new btsensor for the btdevice
+      btdevice->register_sensor(sensor);
+      return btdevice;
+    }
+
     void BTHomeReceiverBaseHub::report_measurement_(uint8_t measurement_type, float value, uint64_t address, BTHomeReceiverBaseDevice *btdevice, bool &device_header_reported)
     {
       bool matched = btdevice ? btdevice->report_measurement_(measurement_type, value) : false;
@@ -43,11 +62,10 @@ namespace esphome
 
     void BTHomeReceiverBaseHub::parse_message_bthome_(const uint64_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
     {
-      //TODO: should do a loop here instead of finding the right device and stopping
-      // for (auto btdevice_i : this->my_devices)
-      //   if (btdevice_i->match(address))
-      //     return btdevice_i;
-
+      // TODO: should do a loop here instead of finding the right device and stopping
+      //  for (auto btdevice_i : this->my_devices)
+      //    if (btdevice_i->match(address))
+      //      return btdevice_i;
 
       auto *btdevice = get_device_by_address(address);
       if (!btdevice && this->get_dump_option() == DumpOption_None)

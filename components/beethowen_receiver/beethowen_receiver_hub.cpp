@@ -16,6 +16,7 @@
 #include "esphome/components/beethowen_base/meshrc_bthome_over_espnow.h"
 
 #include "beethowen_receiver_hub.h"
+#include "beethowen_receiver_device.h"
 
 using namespace std;
 
@@ -52,8 +53,12 @@ namespace esphome
                  buffer2->server_channel, buffer2->passkey);
 #endif // ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
 
+        auto client_mac_a64 = bthome_base::addr_to_uint64(beethowen_base::sender);
+        // note: static_cast is OK as we only generate such objects in the init.py
+        auto device = static_cast<BeethowenReceiverDevice *>(get_device_by_address(client_mac_a64));
+
         // validate remote passkey
-        if (remote_expected_passkey_ != 0 && buffer2->passkey != remote_expected_passkey_)
+        if (device && device->get_remote_expected_passkey() != 0 && buffer2->passkey != device->get_remote_expected_passkey())
         {
           ESP_LOGD(TAG, "Invalid remote found, passkey does not match expected passkey");
           // TODO: send error command with error code
@@ -61,7 +66,7 @@ namespace esphome
         }
 
         uint8_t *client_mac = beethowen_base::sender;
-        beethowen_base::send_command_found(client_mac, buffer2->server_channel, buffer2->passkey);
+        beethowen_base::send_command_found(client_mac, buffer2->server_channel, local_passkey_);
       }
     }
 

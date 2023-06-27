@@ -25,7 +25,7 @@ CONF_CONNECT_PERSISTENT = "connect_persistent"
 CONF_SENSORS = "sensors"
 CONF_AUTO_SEND = "auto_send"
 CONF_LOCAL_PASSKEY = "local_passkey"
-CONF_REMOTE_EXPECTED_PASSKEY = "remote_expected_passkey"
+CONF_EXPECTED_REMOTE_PASSKEY = "expected_remote_passkey"
 CONF_SENSOR_SENSOR_ID = "sensor_id"
 CONF_ON_SEND_FINISHED = "on_send_finished"
 CONF_ON_SEND_FAILED = "on_send_failed"
@@ -91,7 +91,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_CONNECT_PERSISTENT): cv.boolean,
             cv.Optional(CONF_AUTO_SEND): cv.boolean,
             cv.Optional(CONF_LOCAL_PASSKEY): cv.hex_uint16_t,
-            cv.Optional(CONF_REMOTE_EXPECTED_PASSKEY): cv.hex_uint16_t,
+            cv.Optional(CONF_EXPECTED_REMOTE_PASSKEY): cv.hex_uint16_t,
             cv.Optional(CONF_ON_SEND_FINISHED): automation.validate_automation(
                 {
                     cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SendFinishedTrigger),
@@ -149,8 +149,8 @@ async def to_code(config):
         cg.add(var.set_auto_send(config[CONF_AUTO_SEND]))
     if CONF_LOCAL_PASSKEY in config:
         cg.add(var.set_local_passkey(HexInt(config[CONF_LOCAL_PASSKEY])))
-    if CONF_REMOTE_EXPECTED_PASSKEY in config:
-        cg.add(var.set_remote_expected_passkey(HexInt(config[CONF_REMOTE_EXPECTED_PASSKEY])))
+    if CONF_EXPECTED_REMOTE_PASSKEY in config:
+        cg.add(var.set_remote_expected_passkey(HexInt(config[CONF_EXPECTED_REMOTE_PASSKEY])))
 
     for config_item in config.get(CONF_SENSORS, []):
         sensor = await cg.get_variable(config_item[CONF_SENSOR_SENSOR_ID])
