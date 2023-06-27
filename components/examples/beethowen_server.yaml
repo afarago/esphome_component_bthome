@@ -49,26 +49,32 @@ time:
 beethowen_receiver:
   # dump: unmatched
   dump: all
-  # on_packet:
+  local_passkey: 0x1234
+  # on_packet: # mac_address,
   #   - lambda: |-
+  #       auto time_text = id(my_time).now().strftime("%Y-%m-%d %H:%M:%S");
+  #       long long int time_ts = id(my_time).now().timestamp;
   #       id(lastupdate).publish_state(time_text);
+  #       //id(lastupdate_ts).publish_state(time_ts);
+  devices:
+    - mac_address: 48:3F:DA:0C:97:18
+      name_prefix: Beethowen TestDevice
+      dump: all
+    - mac_address: AA:BB:CC:DD:EE:FF
+      name_prefix: Beethowen ABCDEF TestDevice
+      dump: unmatched
+      expected_remote_passkey: 0x2345
 
-# binary_sensor:
-#   - platform: beethowen_receiver
-#     mac_address: 48:3F:DA:0C:97:18
-#     name_prefix: Beethowen TestDevice
-#     # connect_passkey: 0x1234
-#     sensors:
-#       - measurement_type: generic_boolean
-#         name: D6_gpio
-## todo: secondary device registration problem!
+binary_sensor:
+  - platform: beethowen_receiver
+    mac_address: 48:3F:DA:0C:97:18
+    sensors:
+      - measurement_type: generic_boolean
+        name: D6_gpio
 
 sensor:
   - platform: beethowen_receiver
     mac_address: 48:3F:DA:0C:97:18
-    name_prefix: Beethowen TestDevice
-    dump: all
-    # connect_passkey: 0x1234
     sensors:
       - measurement_type: temperature
         name: Temperature
@@ -96,6 +102,12 @@ sensor:
         name: Battery voltage
       - measurement_type: battery
         name: Battery level
+
+  - platform: beethowen_receiver
+    mac_address: AA:BB:CC:DD:EE:00
+    sensors:
+      - measurement_type: temperature
+        name: Temperature
 
   # - platform: template
   #   name: ${systemName} WIFI_channel
