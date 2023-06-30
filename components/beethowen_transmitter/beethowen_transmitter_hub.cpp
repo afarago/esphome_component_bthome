@@ -31,13 +31,13 @@ namespace esphome
     void BeethowenTransmitterHub::setup()
     {
       // setup wifinow hooks
-      beethowen_base::on_command([&](uint8_t command, uint8_t *buffer)
-                                 { beethowen_on_command_(command, buffer); });
+      beethowen_base::on_command([&](uint8_t command, uint8_t *buffer, uint8_t size)
+                                 { beethowen_on_command_(command, buffer, size); });
 
       ESP_LOGD(TAG, "Starting searching for Beethowen receiving server...");
     }
 
-    void BeethowenTransmitterHub::beethowen_on_command_(uint8_t command, uint8_t *buffer)
+    void BeethowenTransmitterHub::beethowen_on_command_(uint8_t command, uint8_t *buffer, uint8_t size)
     {
       ESP_LOGD(TAG, "Command received: %d, from: %s", command, bthome_base::addr_to_str(beethowen_base::sender).c_str());
 
@@ -46,7 +46,7 @@ namespace esphome
         beethowen_base::beethowen_command_find_found_t *buffer2 = (beethowen_base::beethowen_command_find_found_t *)buffer;
 
         // validate remote passkey
-        if (remote_expected_passkey_ != 0 && buffer2->passkey != remote_expected_passkey_)
+        if (remote_expected_passkey_ != 0 && buffer2->header.passkey != remote_expected_passkey_)
         {
           ESP_LOGD(TAG, "Invalid remote found, passkey does not match expected passkey");
           // TODO: send error command with error code
@@ -57,7 +57,11 @@ namespace esphome
         server_found_ = true;
         server_channel_ = buffer2->server_channel;
 
-        ESP_LOGI(TAG, "Found server at {address} %s on {channel} %d with {passkey} %04X", bthome_base::addr64_to_str(server_address_).c_str(), buffer2->server_channel, buffer2->passkey);
+        ESP_LOGI(TAG, "Found server at {address} %s on {channel} %d with {passkey} %04X", bthome_base::addr64_to_str(server_address_).c_str(), buffer2->server_channel, buffer2->header.passkey);
+      }
+      else
+      {
+        ESP_LOGD(TAG, "Unknown command type %d", command);
       }
     }
 
@@ -79,7 +83,7 @@ namespace esphome
         connect_to_wifi(server_channel_, connect_persistent_);
 
         ESP_LOGD(TAG, "trying to find server on {channel} %d, {local_passkey_} %04X, {remote_expected_passkey_} %04X", server_channel_, local_passkey_, remote_expected_passkey_);
-        beethowen_base::send_find(beethowen_base::broadcast, server_channel_, local_passkey_);
+        beethowen_base::send_command_find(beethowen_base::broadcast, server_channel_, local_passkey_);
       }
       else
       {
@@ -114,6 +118,8 @@ namespace esphome
           encoder.addMeasurement(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
         else
           has_outstanding_measurements = true;
+
+        //TODO: addMeasurement_state for binary
       }
       if (do_complete_send && has_outstanding_measurements)
         return false;
@@ -131,7 +137,7 @@ namespace esphome
         for (auto i = 0; i < 5; i++)
         {
           // ESP_LOGD(TAG, ". to: %s", bthome_base::addr_to_str(get_server_address_arr()).c_str());
-          if (beethowen_base::send_with_header(get_server_address_arr(), bthome_data, bthome_data_len))
+          if (beethowen_base::send_command_data(get_server_address_arr(), bthome_data, bthome_data_len, local_passkey_))
             beethowen_base::wait();
           // delayMicroseconds(10);
 

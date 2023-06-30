@@ -13,6 +13,7 @@
 #include <memory>
 #include <cstring>
 
+#include "bthome_base_common.h"
 #include "bthome_encoder.h"
 
 namespace bthome_base
@@ -283,107 +284,4 @@ namespace bthome_base
     pAdvertising->setAdvertisementType(BLE_GAP_CONN_MODE_NON);
   }
   */
-
-  uint8_t BTHomeEncoder::getByteNumber(uint8_t sens)
-  {
-    switch (sens)
-    {
-    case ID_PACKET:
-    case ID_BATTERY:
-    case ID_COUNT:
-    case ID_HUMIDITY:
-    case ID_MOISTURE:
-    case ID_UV:
-    case STATE_BATTERY_LOW:
-    case STATE_BATTERY_CHARHING:
-    case STATE_CO:
-    case STATE_COLD:
-    case STATE_CONNECTIVITY:
-    case STATE_DOOR:
-    case STATE_GARAGE_DOOR:
-    case STATE_GAS_DETECTED:
-    case STATE_GENERIC_BOOLEAN:
-    case STATE_HEAT:
-    case STATE_LIGHT:
-    case STATE_LOCK:
-    case STATE_MOISTURE:
-    case STATE_MOTION:
-    case STATE_MOVING:
-    case STATE_OCCUPANCY:
-    case STATE_OPENING:
-    case STATE_PLUG:
-    case STATE_POWER_ON:
-    case STATE_PRESENCE:
-    case STATE_PROBLEM:
-    case STATE_RUNNING:
-    case STATE_SAFETY:
-    case STATE_SMOKE:
-    case STATE_SOUND:
-    case STATE_TAMPER:
-    case STATE_VIBRATION:
-    case STATE_WINDOW:
-      // case EVENT_BUTTON:
-      return 1;
-      break;
-    case ID_DURATION:
-    case ID_ENERGY:
-    case ID_GAS:
-    case ID_ILLUMINANCE:
-    case ID_POWER:
-    case ID_PRESSURE:
-      return 3;
-      break;
-    case ID_COUNT4:
-    case ID_ENERGY4:
-    case ID_GAS4:
-    case ID_VOLUME:
-    case ID_WATER:
-      return 4;
-      break;
-    default:
-      return 2;
-    }
-  }
-
-  uint16_t BTHomeEncoder::getFactor(uint8_t sens)
-  {
-    switch (sens)
-    {
-    case ID_DISTANCEM:
-    case ID_ROTATION:
-    case ID_TEMPERATURE:
-    case ID_VOLTAGE1:
-    case ID_VOLUME1:
-    case ID_UV:
-      return 10;
-      break;
-    case ID_DEWPOINT:
-    case ID_HUMIDITY_PRECISE:
-    case ID_ILLUMINANCE:
-    case ID_MASS:
-    case ID_MASSLB:
-    case ID_MOISTURE_PRECISE:
-    case ID_POWER:
-    case ID_PRESSURE:
-    case ID_SPD:
-    case ID_TEMPERATURE_PRECISE:
-      return 100;
-      break;
-    case ID_CURRENT:
-    case ID_DURATION:
-    case ID_ENERGY:
-    case ID_ENERGY4:
-    case ID_GAS:
-    case ID_GAS4:
-    case ID_VOLTAGE:
-    case ID_VOLUME:
-    case ID_VOLUMEFR:
-    case ID_WATER:
-      return 1000;
-      break;
-    default:
-      return 1;
-    }
-  }
-
 }

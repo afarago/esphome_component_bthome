@@ -17,7 +17,7 @@ from esphome.const import (
 )
 from esphome.core import CORE, HexInt, coroutine_with_priority
 from esphome.components.bthome_base.const import (
-    MEASUREMENT_TYPES_SENSOR,
+    MEASUREMENT_TYPES_NUMERIC_SENSOR,
     MEASUREMENT_TYPES_BINARY_SENSOR,
 )
 
@@ -182,7 +182,7 @@ class Generator:
         MEASUREMENT_TYPES = (
             MEASUREMENT_TYPES_BINARY_SENSOR
             if is_binary_sensor
-            else MEASUREMENT_TYPES_SENSOR
+            else MEASUREMENT_TYPES_NUMERIC_SENSOR
         )
         schema_base = (
             binary_sensor.BINARY_SENSOR_SCHEMA

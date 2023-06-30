@@ -15,7 +15,7 @@ from esphome.components import binary_sensor, sensor
 from esphome.const import CONF_ID, CONF_TRIGGER_ID
 from esphome.core import CORE, HexInt, coroutine_with_priority
 from esphome.components.bthome_base.const import (
-    MEASUREMENT_TYPES_SENSOR,
+    MEASUREMENT_TYPES_NUMERIC_SENSOR,
     MEASUREMENT_TYPES_BINARY_SENSOR,
 )
 
@@ -78,7 +78,7 @@ def create_check_measurement_type_fn(measurement_types):
 
 
 validate_sensor_measurement_type = create_check_measurement_type_fn(
-    MEASUREMENT_TYPES_SENSOR
+    MEASUREMENT_TYPES_NUMERIC_SENSOR
 )
 validate_binary_sensor_measurement_type = create_check_measurement_type_fn(
     MEASUREMENT_TYPES_BINARY_SENSOR
@@ -150,14 +150,32 @@ async def to_code(config):
     if CONF_LOCAL_PASSKEY in config:
         cg.add(var.set_local_passkey(HexInt(config[CONF_LOCAL_PASSKEY])))
     if CONF_EXPECTED_REMOTE_PASSKEY in config:
-        cg.add(var.set_remote_expected_passkey(HexInt(config[CONF_EXPECTED_REMOTE_PASSKEY])))
+        cg.add(
+            var.set_remote_expected_passkey(
+                HexInt(config[CONF_EXPECTED_REMOTE_PASSKEY])
+            )
+        )
 
-    for config_item in config.get(CONF_SENSORS, []):
-        sensor = await cg.get_variable(config_item[CONF_SENSOR_SENSOR_ID])
-
-        measurement_type = config_item[CONF_MEASUREMENT_TYPE]
+    def get_measurement_type_value_(measurement_type):
         if isinstance(measurement_type, dict):
             measurement_type = measurement_type["measurement_type"]
+        return measurement_type
+
+    # presort sensors to speed up sending and skip re-sorting every time
+    config_sensors = config.get(CONF_SENSORS, [])
+    config_sensors.sort(
+        key=lambda conf_item: get_measurement_type_value_(
+            conf_item[CONF_MEASUREMENT_TYPE]
+        )
+    )
+
+    # add sensors to config
+    for config_item in config_sensors:
+        sensor = await cg.get_variable(config_item[CONF_SENSOR_SENSOR_ID])
+
+        measurement_type = get_measurement_type_value_(
+            config_item[CONF_MEASUREMENT_TYPE]
+        )
 
         cg.add(var.add_sensor(HexInt(measurement_type), sensor))
 

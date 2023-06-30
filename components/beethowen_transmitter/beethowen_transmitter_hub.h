@@ -77,7 +77,7 @@ namespace esphome
       }
 
     protected:
-      void beethowen_on_command_(uint8_t command, uint8_t *buffer);
+      void beethowen_on_command_(uint8_t command, uint8_t *buffer, uint8_t size);
       bool is_server_found() { return this->server_found_; }
       void connect_to_wifi(uint8_t channel, bool persistent);
 

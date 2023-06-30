@@ -1,88 +1,3 @@
-bthome
-	parse v1, v2
-	parse payload
-
-espnow
-
-
-meshrc_bthome_over_espnow
-bthome_over_espnow -- BTHoENW (project Beethowen)
-
-beethowen
--- receiver sensor
-		beethowen_receiver:
-			
-		sensor:
-		  - platform: beethowen_receiver
-			mac_address: 11:22:33:44:55:66
-			name_prefix: Beethowen TestDevice
-			sensors:
-			  - measurement_type: temperature
-				name: Temperature
-	
-void on(esp_rc_callback_t callback) {
-
-
-0xD2, 0xFC, 0x40 <BTHOME> data packet
-//0xD2, 0xFD, 0x01 == find server
-//0xD2, 0xFD, 0x02 == server found (empty)
-
-// upon packet arrival check and return (data+3) ptr
-// check V2 header 2 bytes + sw_version 1 byte (adv_info) -- 0xD2, 0xFC, 0x40) --> ((0x40<<5&7) == 2 // 5-7 bits)
-// max payload is 247 bytes
-typedef std::function<void(uint8_t* data)> esp_rc_data_callback_t;
-// after parsing
-typedef std::function<void(uint8_t meas_typ, float value)> esp_rc_data_callback_t;
-	
-	
-	
--- lib encoder
-		bthomeencoder = new BTHomeEncoder()
-		bthomeencoder->resetMeasurement()
-		bthomeencoder->addMeasurement(0x02, 25.06);
-		bthomeencoder->addMeasurement(0x03, 58.00);
-		bthomeencoder->buildPaket()
-		// bthomeencoder->m_sensorData
-		
--- esphome encoder
-		beethowen_transmitter: (all sending sensors are registered)
-			persistent: true
-			id: my_beethowen_transmitter
-			proxied_sensors:
-				- measurement_type: temperature
-				  sensor_id: bmp085_temperature_sensor ## "implement sensor holder"
-			auto_send: true 				# should check if all sensors have state // not outstanding reads then send it automatically
-			
-		
-		sensor:
-			- platform: beethowen_transmitter
-				id: beethowen_testdevice_temperature
-				name: Temperature
-				measurement_type: temperature
-				lambda: |-
-					auto value = id(bmp085_temperature_sensor).state;
-					return value;
-
-			- platform: bmp085
-				temperature:
-					id: bmp085_temperature_sensor
-					internal: true
-					filters:
-						- lambda: |-
-						    id(my_beethowen_transmitter).register_reading(id(bmp085_temperature_sensor), 0x02, x)
-		
-		script:
-		  - id: update_and_send_data
-			lambda: |-
-			  id(my_bmp085).update();
-			  
-			  // collects all sensors with data, assembles, then sends
-			  global_beethowen_component->send();
-			  
-	BeethowenComponent::BeethowenComponent() { global_beethowen_component = this; }
-	extern BeethowenComponent *global_beethowen_component;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
-
-extern APIServer *global_api_server;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 -- Home Assistant parser integration
 with service to send data / proxy data to
@@ -92,9 +7,6 @@ esp add beethowen "server" component option to proxy all incoming data to HA
 -----------
 
 
-
-
-- add channelid to found response
 - add OTA_SWITCH to communication channel
 	ota::OTAComponent *ota_;
 	from esphome.components.ota import OTAComponent
@@ -161,24 +73,20 @@ esp add beethowen "server" component option to proxy all incoming data to HA
 				ssid: "$systemName"
 				password: !secret wifi_password
 			persistent: true
-			
 
-client->bcast:	0xD2FD, 0x01, 0xABCD 				== find server with passkey 0xABCD
-server->client:	0xD2FD, 0x02, 0xABCD, 0x0B 			== server found or channel 11
-server->client:	0xD2FD, 0xFF, 0xABCD, 0x22 			== error code 0x22 // e.g. unexpected client key
+####################################
 
-//server->client:	0xD2FD, 0x03, 0xABCD 				== start local OTA with pre-configured AP
-//server->client:	0xD2FD, 0x03, 0xABCD, URL/nullterm 	== start local OTA with pre-configured AP
+client->bcast:	0xD2FC, 0x01, 0xABCD 				== find server with passkey 0xABCD
+server->client:	0xD2FC, 0x02, 0xABCD, 0x0B 			== server found or channel 11
+//server->client:	0xD2FC, 0xFF, 0xABCD, 0x22 			== error code 0x22 // e.g. unexpected client key
 
-//client->server:	0xD2FD, 0xFF, 0x40, 0xABCD, <BTHomeData> == data packet
+//server->client:	0xD2FC, 0x03, 0xABCD 				== start local OTA with pre-configured AP
+//server->client:	0xD2FC, 0x03, 0xABCD, URL/nullterm 	== start local OTA with pre-configured AP
 
-client->server:	0xD2FC, 0x40, 0xABCD, <BTHomeData>	== data packet
+client->server:	0xD2FC, 0x16, 0xABCD, 0x40, <BTHomeData> == data packet
 
-server->client:	0xD2FD, 0x00, 0xABCD				== request client system_info
-client->server:	0xD2FD, 0x00, 0xABCD, 0x00 [system_version], 0x01 [v1], 0x01 [system_name], 0x10 [len=16], "beethowen_remote" == response system_info
+//server->client:	0xD2FC, 0x00, 0xABCD				== request client system_info
+//client->server:	0xD2FC, 0x00, 0xABCD, 0x00 [system_version], 0x01 [v1], 0x01 [system_name], 0x10 [len=16], "beethowen_remote" == response system_info
 
 //check: can I extend sensor.SENSOR_SCHEMA model with a field e.g. beethowen_measurement_type: temperature + modify def to_code? --? probably not
 
-TODO:
-- check passkey of server at transmitter
-- check passkey of transmitter at server 
