@@ -23,6 +23,7 @@ namespace esphome
     {
     public:
 #define BEETHOWEN_TAKT_TIME 100
+#define BEETHOWEN_MINIMUM_TIMEOUT_AUTO_SEND (10 * 1000)
       BeethowenTransmitterHub() : PollingComponent(BEETHOWEN_TAKT_TIME)
       {
       }
@@ -47,8 +48,8 @@ namespace esphome
       {
         server_channel_ = (uint8_t)(value >> 48) & 0xff;
         set_server_address(value & 0xffffffffffffLL);
-        server_found_ = true;
-        connect_to_wifi(server_channel_, connect_persistent_);
+        this->server_found_ = true;
+        this->init_server_after_set();
       };
 
       inline void set_connect_persistent(bool value) { connect_persistent_ = value; };
@@ -77,9 +78,10 @@ namespace esphome
       }
 
     protected:
-      void beethowen_on_command_(uint8_t command, uint8_t *buffer, uint8_t size);
+      void beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size);
       bool is_server_found() { return this->server_found_; }
       void connect_to_wifi(uint8_t channel, bool persistent);
+      void init_server_after_set();
 
       CallbackManager<void(bool)> on_send_finished_callback_;
       CallbackManager<void()> on_send_failed_callback_;
@@ -92,18 +94,17 @@ namespace esphome
       bool initial_server_checkin_completed_{false};
       bool connect_persistent_{false};
       bool auto_send_{false};
-      bool auto_send_done_{false};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
 
-      uint32_t last_find_millis = 0;
+      uint32_t last_send_millis_{0};
 
-      struct BTHomeTypedSensor
+      typedef struct
       {
         uint8_t measurement_type;
         sensor::Sensor *sensor;
         binary_sensor::BinarySensor *binary_sensor;
-      };
+      } BTHomeTypedSensor;
 
       bool has_sensor_state(BTHomeTypedSensor sensor_struct)
       {
