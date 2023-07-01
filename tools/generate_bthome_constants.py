@@ -1,3 +1,12 @@
+import urllib.request
+import ssl
+from bs4 import BeautifulSoup
+import json
+import math
+import re
+import pprint
+from collections import OrderedDict
+
 # class BTHomeType:
 #     def __init__(self, object_id, property, data_type, factor, example, result, unit):
 #         self.object_id = object_id
@@ -9,26 +18,20 @@
 #         self.unit = unit
 # bti = BTHomeType(0x00, "packet id", "uint8 (1 byte)", "1", "9", "9", "")
 
-# print(bti)
-
-import urllib.request
-import ssl
-from bs4 import BeautifulSoup
-import json
-import math
-import re
-import pprint
-from collections import OrderedDict
-
 gcontext = ssl.SSLContext()
-page = urllib.request.urlopen("http://bthome.io/format/", context=gcontext)
+page = urllib.request.urlopen(
+    "http://bthome.io/format/",
+    context=gcontext,
+)
 page_content = page.read()
+TARGET_DIR = "../components/bthome_base/"
 
 soup = BeautifulSoup(page_content, "html.parser")
 tables = soup.find_all("table")
 
-data = []
 main_types = ["numeric", "binary", None, "numeric"]
+
+data = []
 for imain in range(4):
     main_type = main_types[imain]
     # skip events for now
@@ -246,12 +249,12 @@ for index, item in enumerate(data):
 
 ################################################################
 
-fname = "bthome_common_generated.h"
+fname = TARGET_DIR + "bthome_common_generated.h"
 print(f"generating {fname}...")
-f = open(fname, "w")
+f = open(fname, "w", encoding="utf-8")
 f.write(
     """
-/* auto generated file, do not edit */
+/* auto generated, do not edit */
 
 #pragma once
 #include <pgmspace.h>
@@ -294,14 +297,15 @@ def generate_decoder_array(data):
         if item:
             values.append(
                 "  "
-                + "0x%02x" % (item["decode_datatype_key"])
+                + "0b"
+                + format((item["decode_datatype_key"]), "08b")
                 + f', /* {"0x%02x" %item["measurement_type"]} | {item["property"]} | {item["property_unique"]} | {item["data_type"]} | {item["accuracy_decimals"]} */'
             )
         else:
             values.append("  0x00, /* N/A */")
     names = "\n".join(values)
     return (
-        "static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* DataLen 123 bits, DataType 45 bits, Factor 67 bits */ \n"
+        "static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ \n"
         + names
         + "\n};\n"
     )
@@ -332,13 +336,12 @@ def generate_const(data, main_type):
     return "\n".join(values)
 
 
-fname = "const_generated.py"
+fname = TARGET_DIR + "const_generated.py"
 print(f"generating {fname}...")
-f = open(fname, "w")
+f = open(fname, "w", encoding="utf-8")
 
 main_types = ["numeric", "binary", None, "numeric"]
 for imain in set(main_types):
-    print(imain)
     if imain is None:
         continue
 

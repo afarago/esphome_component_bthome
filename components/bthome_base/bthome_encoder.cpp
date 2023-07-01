@@ -16,6 +16,9 @@
 #include "bthome_base_common.h"
 #include "bthome_encoder.h"
 
+// #include "esphome\core\log.h" //TODO: temporary only for development
+// using namespace esphome;
+
 namespace bthome_base
 {
 
@@ -57,8 +60,10 @@ namespace bthome_base
 
   void BTHomeEncoder::addMeasurement(uint8_t sensor_id, uint64_t value)
   {
-    uint8_t size = getByteNumber(sensor_id);
-    uint16_t factor = getFactor(sensor_id);
+    BTHomeDataFormat dataformat = getDataFormat(sensor_id);
+    uint8_t size = dataformat.len_in_bytes;
+    uint16_t factor = dataformat.factor_multiple;
+
     // if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
     if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN))
     {
@@ -85,13 +90,18 @@ namespace bthome_base
 
   void BTHomeEncoder::addMeasurement(uint8_t sensor_id, float value)
   {
-    uint8_t size = getByteNumber(sensor_id);
-    uint16_t factor = getFactor(sensor_id);
+    BTHomeDataFormat dataformat = getDataFormat(sensor_id);
+    uint8_t size = dataformat.len_in_bytes;
+    uint16_t factor = dataformat.factor_multiple;
+
     // if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
     if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN))
     {
       this->m_count++;
       uint64_t value2 = static_cast<uint64_t>(value * factor);
+      //ESP_LOGD("BTHomeEncoder", "sensor_id:%02x value:%f, %llu", sensor_id, value, value2);
+      // TODO: what about signed values?
+
       this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
       this->m_sensorDataIdx++;
       for (uint8_t i = 0; i < size; i++)
@@ -139,7 +149,7 @@ namespace bthome_base
       //  }
       //  else
       {
-        data_block[i].data_len = getByteNumber(this->m_sensorData[j]);
+        data_block[i].data_len = getDataFormat(this->m_sensorData[j]).len_in_bytes;
       }
       // copy the data
       for (k = 0; k < data_block[i].data_len; k++)

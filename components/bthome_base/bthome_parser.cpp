@@ -74,7 +74,7 @@ namespace bthome_base
     uint8_t obj_meas_type;
     uint8_t obj_control_byte;
     uint8_t obj_data_length;
-    uint8_t obj_data_format;
+    HaBleTypes_e obj_data_format;
     uint8_t obj_data_start;
     float obj_data_factor;
 
@@ -126,13 +126,10 @@ namespace bthome_base
         break;
       }
 
-      // const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
-      // obj_data_length = (meas_type_flags & 0b00000111);
-      // obj_data_format = (meas_type_flags & 0b00011000) >> 3;
-      // obj_data_factor = MEAS_TYPES_FACTORS[(meas_type_flags & 0b01100000) >> 5];
-      obj_data_length = getByteNumber(obj_meas_type);
-      obj_data_format = getDataFormat(obj_meas_type);
-      obj_data_factor = getFactorLog10(obj_meas_type);
+      BTHomeDataFormat dataformat = getDataFormat(obj_meas_type);
+      obj_data_length = dataformat.len_in_bytes;
+      obj_data_format = dataformat.data_format;
+      obj_data_factor = dataformat.factor_multiple;
       next_obj_start = obj_data_start + obj_data_length;
 
       if (obj_data_length == 0)
@@ -154,7 +151,7 @@ namespace bthome_base
       float value = 0;
       if (obj_data_format == HaBleType_uint || obj_data_format == HaBleType_sint)
       {
-        value = parse_integer(data, (HaBleTypes_e)obj_data_format, obj_value_data_length) * obj_data_factor;
+        value = (float)parse_integer(data, (HaBleTypes_e)obj_data_format, obj_value_data_length) / obj_data_factor;
       }
       else
       {

@@ -1,5 +1,5 @@
 
-/* auto generated, do not edit */
+/* auto generated file, do not edit */
 
 #pragma once
 #include <pgmspace.h>

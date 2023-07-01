@@ -37,25 +37,27 @@ namespace bthome_base
         return buffer;
     };
 
-    uint8_t getByteNumber(uint8_t obj_meas_type)
+    static const uint16_t MEAS_TYPES_FACTORS_POSITIVE[] = {
+        1,    // 0
+        10,   // 1
+        100,  // 2
+        1000, // 3
+        10000 // 4 - not possible
+    };
+
+    BTHomeDataFormat getDataFormat(uint8_t obj_meas_type)
     {
+        // check range
+        if (obj_meas_type >= sizeof(MEAS_TYPES_FLAGS) / sizeof(uint8_t))
+            return {};
+
         const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
-        return (meas_type_flags & 0b00000111);
-    }
-    uint16_t getFactor(uint8_t obj_meas_type)
-    {
-        // 1,10,100,1000
-        return MEAS_TYPES_FACTORS_POSITIVE[getFactorLog10(obj_meas_type)];
-    }
-    uint16_t getFactorLog10(uint8_t obj_meas_type)
-    {
-        // 0,1,2,3
-        const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
-        return MEAS_TYPES_FACTORS[(meas_type_flags & 0b01100000) >> 5];
-    }
-    uint8_t getDataFormat(uint8_t obj_meas_type)
-    {
-        const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
-        return (meas_type_flags & 0b00011000) >> 3;
+        uint8_t factor_raw = (meas_type_flags & 0b01100000) >> 5;
+        BTHomeDataFormat retval = {
+            .factor_raw = factor_raw,
+            .factor_multiple = MEAS_TYPES_FACTORS_POSITIVE[factor_raw],
+            .len_in_bytes = (uint8_t)(meas_type_flags & 0b00000111),
+            .data_format = (HaBleTypes_e)((meas_type_flags & 0b00011000) >> 3)};
+        return retval;
     }
 }
