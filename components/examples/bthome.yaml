@@ -9,7 +9,7 @@ esp32:
   # wemos_d1_mini32
 
 external_components:
-  - source: github://afarago/esphome_component_computhermqrf
+  - source: github://afarago/esphome_component_bthome
     refresh: 1min
 
 logger:
