@@ -66,7 +66,7 @@ MEASUREMENT_TYPES_NUMERIC_SENSOR = {
   "gas": { "measurement_type": 0x4B, "accuracy_decimals": 3, "unit_of_measurement": "m3" },
   "gas_4": { "measurement_type": 0x4C, "accuracy_decimals": 3, "unit_of_measurement": "m3" },
   "energy_4": { "measurement_type": 0x4D, "accuracy_decimals": 3, "unit_of_measurement": "kWh" },
-  "volume_coarse": { "measurement_type": 0x4E, "accuracy_decimals": 3, "unit_of_measurement": "L" },
+  "volume_precise": { "measurement_type": 0x4E, "accuracy_decimals": 3, "unit_of_measurement": "L" },
   "water": { "measurement_type": 0x4F, "accuracy_decimals": 3, "unit_of_measurement": "L" },
   "timestamp": { "measurement_type": 0x50, "accuracy_decimals": 0, "unit_of_measurement": "" },
   "acceleration": { "measurement_type": 0x51, "accuracy_decimals": 3, "unit_of_measurement": "m/s²" },

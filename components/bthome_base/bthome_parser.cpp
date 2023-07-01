@@ -17,18 +17,6 @@
 
 namespace bthome_base
 {
-  // Sign extend trick
-  // http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend
-  template <typename T, unsigned B>
-  inline T signextend(const T x)
-  {
-    struct
-    {
-      T x : B;
-    } s;
-    return s.x = x;
-  }
-
   inline uint16_t combine_bytes_little_endian_u16(const uint8_t *data) { return ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
   inline uint32_t combine_bytes_little_endian_u24(const uint8_t *data) { return ((data[2] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }
   inline uint32_t combine_bytes_little_endian_u32(const uint8_t *data) { return ((data[3] & 0xFF) << 24) | ((data[2] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[0] & 0xFF); }

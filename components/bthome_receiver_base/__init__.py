@@ -24,6 +24,7 @@ from esphome.components.bthome_base.const import (
 CONF_BTHomeReceiverBaseDevice_ID = "BTHomeReceiverBaseDevice_ID"
 CONF_NAME_PREFIX = "name_prefix"
 CONF_DUMP_OPTION = "dump"
+CONF_DUMP_PACKETS_OPTION = "dump_packets"
 CONF_DEVICES = "devices"
 CONF_SENSORS = "sensors"
 CONF_MEASUREMENT_TYPE = "measurement_type"
@@ -103,6 +104,7 @@ class Generator:
                 cv.Optional(CONF_DUMP_OPTION): cv.enum(
                     DUMP_OPTION, upper=True, space="_"
                 ),
+                cv.Optional(CONF_DUMP_PACKETS_OPTION): cv.boolean,
                 cv.Optional(CONF_DEVICES): cv.ensure_list(
                     self.generate_component_device_schema()
                 ),
@@ -136,6 +138,8 @@ class Generator:
 
         if CONF_DUMP_OPTION in config:
             cg.add(var.set_dump_option(config[CONF_DUMP_OPTION]))
+        if CONF_DUMP_PACKETS_OPTION in config:
+            cg.add(var.set_dump_packets_option(config[CONF_DUMP_PACKETS_OPTION]))
 
         # iterate around the devices
         if CONF_DEVICES in config:

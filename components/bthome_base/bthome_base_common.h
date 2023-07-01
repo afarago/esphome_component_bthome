@@ -32,4 +32,16 @@ namespace bthome_base
     } BTHomeDataFormat;
 
     BTHomeDataFormat getDataFormat(uint8_t obj_meas_type);
+
+    // Sign extend trick
+    // http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend
+    template <typename T, unsigned B>
+    inline T signextend(const T x)
+    {
+        struct
+        {
+            T x : B;
+        } s;
+        return s.x = x;
+    }
 }

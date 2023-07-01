@@ -148,10 +148,10 @@ for index, item in enumerate(data):
             if len(set(crow)) == 1:
                 differentiator_matrix[cindex] = []
 
-        base_accuracy_value = None
+        base_accuracy_at = None
 
         def append_diff(item):
-            global base_accuracy_value
+            global base_accuracy_at
             # prop_value = item['property']
             meas_value = item["measurement_type"]
             # print(f"  == {item['measurement_type_hex']}")
@@ -189,7 +189,7 @@ for index, item in enumerate(data):
                 # accuracy_decimal: default/first elem should not get extension, yet others should receive coarse/precise
                 min_value = min([item["measurement_type"] for item in alike_list])
                 if min_value == item["measurement_type"]:
-                    base_accuracy_value = item["measurement_type"]
+                    base_accuracy_at = item
                     # differentiator = list(differentiator_candidates)[cindex]
                     # print(
                     #     f"   skip:1b value:{meas_value} min_value:{min_value} differentiator:{differentiator}"
@@ -219,7 +219,7 @@ for index, item in enumerate(data):
                     differentiator == "accuracy_decimals"
                 ):  # type(differentiator_dictionary[differentiator]) is dict:
                     # accuracy_decimal -- dict, relative to "base_accuracy_value"
-                    if base_accuracy_value > item[differentiator]:
+                    if base_accuracy_at[differentiator] > item[differentiator]:
                         suffix = "coarse"
                     else:
                         suffix = "precise"

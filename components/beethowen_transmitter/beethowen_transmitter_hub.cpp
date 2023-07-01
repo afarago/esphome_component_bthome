@@ -106,7 +106,7 @@ namespace esphome
 
     bool BeethowenTransmitterHub::send(bool do_complete_send)
     {
-      bthome_base::BTHomeEncoder encoder;
+      bthome_base::BTHomeEncoder encoder(MAX_BEETHOWEN_PAYLOAD_LENGTH);
       encoder.resetMeasurement();
 
       // collect data
@@ -115,11 +115,11 @@ namespace esphome
       {
         // ESP_LOGD(TAG, ".send {measurement_type} %d, {has_sensor_state} %d", btsensor_struct.measurement_type, has_sensor_state(btsensor_struct));
         if (has_sensor_state(btsensor_struct))
-          encoder.addMeasurement(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
+          encoder.addMeasurementValue(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
         else
           has_outstanding_measurements = true;
 
-        //TODO: addMeasurement_state for binary
+        // TODO: addMeasurement_state for binary
       }
       if (do_complete_send && has_outstanding_measurements)
         return false;
@@ -134,6 +134,7 @@ namespace esphome
         uint8_t bthome_data_len;
         encoder.buildPaket(bthome_data, bthome_data_len);
 
+        // ESP_LOGD(TAG, "buildPaket: {len}:%d {last}:0x%02x", bthome_data_len, bthome_data[bthome_data_len - 1]);
         for (auto i = 0; i < 5; i++)
         {
           // ESP_LOGD(TAG, ". to: %s", bthome_base::addr_to_str(get_server_address_arr()).c_str());

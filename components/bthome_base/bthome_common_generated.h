@@ -72,7 +72,7 @@ typedef enum {
   BTHOME_GAS_VALUE = 0x4B, 
   BTHOME_GAS_4_VALUE = 0x4C, 
   BTHOME_ENERGY_4_VALUE = 0x4D, 
-  BTHOME_VOLUME_COARSE_VALUE = 0x4E, 
+  BTHOME_VOLUME_PRECISE_VALUE = 0x4E, 
   BTHOME_WATER_VALUE = 0x4F, 
   BTHOME_TIMESTAMP_VALUE = 0x50, 
   BTHOME_ACCELERATION_VALUE = 0x51, 
@@ -158,7 +158,7 @@ static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bi
   0b01100011, /* 0x4b | gas | gas | uint24 (3 bytes) | 3 */
   0b01100100, /* 0x4c | gas | gas_4 | uint32 (4 bytes) | 3 */
   0b01100100, /* 0x4d | energy | energy_4 | uint32 (4 bytes) | 3 */
-  0b01100100, /* 0x4e | volume | volume_coarse | uint32 (4 bytes) | 3 */
+  0b01100100, /* 0x4e | volume | volume_precise | uint32 (4 bytes) | 3 */
   0b01100100, /* 0x4f | water | water | uint32 (4 bytes) | 3 */
   0b00000100, /* 0x50 | timestamp | timestamp | uint48 (4 bytes) | 0 */
   0b01100010, /* 0x51 | acceleration | acceleration | uint16 (2 bytes) | 3 */

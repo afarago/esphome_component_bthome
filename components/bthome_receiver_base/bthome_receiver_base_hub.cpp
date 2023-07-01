@@ -25,7 +25,7 @@ namespace esphome
       {
         btdevice = get_device_by_address(address);
       }
-      
+
       if (!btdevice)
       {
         btdevice = new BTHomeReceiverBaseDevice();
@@ -71,13 +71,16 @@ namespace esphome
       if (!btdevice && this->get_dump_option() == DumpOption_None)
         return;
 
-#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
-      // log incoming packet
-      std::string serviceData = "";
-      for (auto i = 0; i < payload_length; i++)
-        serviceData += str_snprintf("%02X ", 3, payload_data[i]);
-      ESP_LOGV(TAG, "DATA received - %s = %s", bthome_base::addr64_to_str(address).c_str(), serviceData.c_str());
-#endif // ESPHOME_LOG_LEVEL_VERBOSE
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+      if (dump_packets_option_)
+      {
+        // log incoming packet
+        std::string serviceData = "";
+        for (auto i = 0; i < payload_length; i++)
+          serviceData += str_snprintf("%02X ", 3, payload_data[i]);
+        ESP_LOGD(TAG, "DATA received - %s = %s", bthome_base::addr64_to_str(address).c_str(), serviceData.c_str());
+      }
+#endif // ESPHOME_LOG_LEVEL_DEBUG
 
       // parse the payload and report measurements in the callback, will be fixing this to V2
       bool device_header_reported = false;

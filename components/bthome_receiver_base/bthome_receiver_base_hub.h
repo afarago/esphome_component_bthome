@@ -31,6 +31,7 @@ namespace esphome
     public:
       DumpOption_e get_dump_option() { return this->dump_option_; };
       void set_dump_option(DumpOption_e value) { this->dump_option_ = value; };
+      void set_dump_packets_option(bool value) { this->dump_packets_option_ = value; };
 
       float get_setup_priority() const override { return setup_priority::DATA; }
 
@@ -56,6 +57,7 @@ namespace esphome
 
     private:
       DumpOption_e dump_option_{DumpOption_None};
+      bool dump_packets_option_{false};
       std::map<uint64_t, BTHomeReceiverBaseDevice *> my_devices;
     };
 

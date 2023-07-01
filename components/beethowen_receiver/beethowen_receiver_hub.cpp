@@ -71,7 +71,7 @@ namespace esphome
       {
         auto buffer2 = (beethowen_base::beethowen_command_data_t *)buffer;
         auto payload_data = buffer2->data;
-        auto payload_len = size - BEETHOWEN_MAGIC_HEADER_LEN - BEETHOWEN_MAGIC_DATA_EXTRA_HEADER_LEN;
+        auto payload_len = size - (BEETHOWEN_HEADER_LEN + BEETHOWEN_DATA_EXTRA_LEN);
         parse_message_bthome_(client_mac_a64, payload_data, payload_len, bthome_base::BTProtoVersion_BTHomeV2);
       }
       break;

@@ -102,15 +102,19 @@ namespace beethowen_base
 			return false;
 
 		fill_beethowen_header(BeethowenCommand_Data, passkey);
-		buffer.command_data.deviceinfo = 0x40;
+		buffer.command_data.deviceinfo = BEETHOWEN_BTHOME_DEVICEINFO;
 		memcpy(buffer.command_data.data, data, payload_len);
 
-		return send(dest, buffer.raw, payload_len + BEETHOWEN_MAGIC_HEADER_LEN + BEETHOWEN_MAGIC_DATA_EXTRA_HEADER_LEN);
+		return send(dest, buffer.raw, payload_len + BEETHOWEN_HEADER_LEN + BEETHOWEN_DATA_EXTRA_LEN);
 	}
 
-	void on_command(esp_rc_command_callback_t callback)
+	bool on_command(esp_rc_command_callback_t callback)
 	{
+		if (events_num == MAX_CALLBACKS - 1)
+			return false;
+
 		events[events_num++] = (esp_rc_event_t){callback};
+		return true;
 	}
 
 	void wait()

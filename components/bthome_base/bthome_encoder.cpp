@@ -21,6 +21,11 @@
 
 namespace bthome_base
 {
+  BTHomeEncoder::BTHomeEncoder(uint16_t measurement_max_len)
+  {
+    // ESPHome cannot throw exceptions, just absorb this
+    measurement_max_len_ = min(measurement_max_len, (uint16_t)MAX_BUFFER_LEN);
+  }
 
   void BTHomeEncoder::resetMeasurement()
   {
@@ -30,96 +35,101 @@ namespace bthome_base
     this->m_count = 0;
   }
 
-  void BTHomeEncoder::addMeasurement_state(uint8_t sensor_id, uint8_t state, uint8_t steps)
+  bool BTHomeEncoder::addMeasurement_state(uint8_t sensor_id, uint8_t state, uint8_t steps)
   {
     // if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
-    if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) <= (MEASUREMENT_MAX_LEN))
+    if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) > (measurement_max_len_))
+      return false;
+
+    this->m_count++;
+    this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
+    this->m_sensorDataIdx++;
+    this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(state & 0xff);
+    this->m_sensorDataIdx++;
+    if (steps > 0)
     {
-      this->m_count++;
-      this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
+      this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(steps & 0xff);
       this->m_sensorDataIdx++;
-      this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(state & 0xff);
-      this->m_sensorDataIdx++;
-      if (steps > 0)
-      {
-        this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(steps & 0xff);
-        this->m_sensorDataIdx++;
-      }
-      if (!this->m_sortEnable)
-      {
-        if (sensor_id < this->last_object_id)
-          this->m_sortEnable = true;
-      }
-      last_object_id = sensor_id;
     }
-    else
+    if (!this->m_sortEnable)
     {
-      // LOG ERROR
+      if (sensor_id < this->last_object_id)
+        this->m_sortEnable = true;
     }
+    last_object_id = sensor_id;
+
+    return true;
   }
 
-  void BTHomeEncoder::addMeasurement(uint8_t sensor_id, uint64_t value)
+  bool BTHomeEncoder::addMeasurementValueRaw(uint8_t sensor_id, uint64_t raw_value, uint8_t size)
+  {
+    this->m_count++;
+    this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
+    this->m_sensorDataIdx++;
+    for (uint8_t i = 0; i < size; i++)
+    {
+      this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>((raw_value >> (8 * i)) & 0xff);
+      this->m_sensorDataIdx++;
+    }
+    if (!this->m_sortEnable)
+    {
+      if (sensor_id < this->last_object_id)
+        this->m_sortEnable = true;
+    }
+    last_object_id = sensor_id;
+
+    return true;
+  }
+
+  bool BTHomeEncoder::addMeasurementValue(uint8_t sensor_id, uint64_t value)
   {
     BTHomeDataFormat dataformat = getDataFormat(sensor_id);
     uint8_t size = dataformat.len_in_bytes;
     uint16_t factor = dataformat.factor_multiple;
 
     // if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
-    if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN))
-    {
-      this->m_count++;
-      this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
-      this->m_sensorDataIdx++;
-      for (uint8_t i = 0; i < size; i++)
-      {
-        this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(((value * factor) >> (8 * i)) & 0xff);
-        this->m_sensorDataIdx++;
-      }
-      if (!this->m_sortEnable)
-      {
-        if (sensor_id < this->last_object_id)
-          this->m_sortEnable = true;
-      }
-      last_object_id = sensor_id;
-    }
-    else
-    {
-      // LOG ERROR
-    }
+    if (size == 0)
+      return false;
+    if ((this->m_sensorDataIdx + size + 1) > (measurement_max_len_))
+      return false;
+
+    uint64_t value2 = value * factor;
+    return addMeasurementValueRaw(sensor_id, value2, size);
   }
 
-  void BTHomeEncoder::addMeasurement(uint8_t sensor_id, float value)
+  bool BTHomeEncoder::addMeasurementValue(uint8_t sensor_id, float value)
   {
     BTHomeDataFormat dataformat = getDataFormat(sensor_id);
     uint8_t size = dataformat.len_in_bytes;
     uint16_t factor = dataformat.factor_multiple;
 
     // if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
-    if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN))
-    {
-      this->m_count++;
-      uint64_t value2 = static_cast<uint64_t>(value * factor);
-      //ESP_LOGD("BTHomeEncoder", "sensor_id:%02x value:%f, %llu", sensor_id, value, value2);
-      // TODO: what about signed values?
+    if (size == 0)
+      return false;
+    if ((this->m_sensorDataIdx + size + 1) > (measurement_max_len_))
+      return false;
 
-      this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
-      this->m_sensorDataIdx++;
-      for (uint8_t i = 0; i < size; i++)
-      {
-        this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>((value2 >> (8 * i)) & 0xff);
-        this->m_sensorDataIdx++;
-      }
-      if (!this->m_sortEnable)
-      {
-        if (sensor_id < this->last_object_id)
-          this->m_sortEnable = true;
-      }
-      last_object_id = sensor_id;
-    }
-    else
+    uint64_t value2;
+    switch (dataformat.data_format)
     {
-      // LOG ERROR
+    case HaBleType_uint:
+    {
+      value2 = static_cast<uint64_t>(value * factor);
     }
+    break;
+    case HaBleType_sint:
+    {
+      sint64_t value2s = static_cast<sint64_t>(value * factor);
+      value2 = signextend<uint64_t, 64>(value2s);
+    }
+    break;
+    default:
+      // cannot encode this
+      return false;
+    }
+
+    // perform actual data add to the send array
+    return addMeasurementValueRaw(sensor_id, value2, size);
   }
 
   void BTHomeEncoder::sortSensorData()
@@ -132,7 +142,7 @@ namespace bthome_base
       uint8_t data[4];
       uint8_t data_len;
     };
-    struct DATA_BLOCK data_block[MEASUREMENT_MAX_LEN / 2 + 1];
+    struct DATA_BLOCK data_block[measurement_max_len_ / 2 + 1];
     struct DATA_BLOCK temp_data_block;
 
     for (i = 0, j = 0, data_block_num = 0; j < this->m_sensorDataIdx; i++)
