@@ -29,7 +29,13 @@ TARGET_DIR = "../components/bthome_base/"
 soup = BeautifulSoup(page_content, "html.parser")
 tables = soup.find_all("table")
 
-main_types = ["numeric", "binary", None, "numeric"]
+# main_types = ["numeric", "binary", None, "numeric"]
+main_types = [
+    "numeric",  # Object id	Property	Data type	Factor	Example	Result	Unit
+    "binary",  # Object id	Property	Data type
+    None,  # "event_binary",  # Object id	Device type	Event id	Event type	Event property
+    "numeric",  # Object id	Property	Data Type
+]  # main types in sections within bthome.io/format page
 
 data = []
 for imain in range(4):
@@ -39,25 +45,59 @@ for imain in range(4):
         continue
 
     table = tables[imain].find("tbody")
+    lastrow = []
     for row in table.findAll("tr"):
+        factor = 1
+        unit_of_measurement = ""
+
         row = row.find_all("td")
         row = [ele.text.strip() for ele in row]
 
         object_id_raw = row[0]
-        object_id = int(row[0], 16)
+        property = row[1]
+        event_is_subevent = None
+        if main_type in ["binary", "numeric"]:
+            data_type = row[2]
+            data_type_signed = data_type.startswith("sint")
+            data_type_length = 1
+            try:
+                data_type_length = int(re.search("\((\d+)", data_type).group(1))
+            except:
+                pass
+        # elif main_type == "event_binary":
+        #     if object_id_raw == "":
+        #         object_id_raw = row[0] = lastrow[0]
+        #         property = row[1] = lastrow[1]
+        #         event_is_subevent = True
+        #     event_id = row[2]
+        #     event_type = row[3] if row[3] != "None" else None
+        #     unit_of_measurement = row[4].replace("#", "").replace(" ", "")
+
+        #     example_len = (int)(len(row[5].strip()) / 2)
+        #     data_type_length = example_len - 1
+        #     data_type = f"uint8 ({data_type_length} byte)"
+
+        #     if event_is_subevent:
+        #         object_id_raw = object_id_raw + event_id.replace("0x", "")
+
+        #     property = f"{property}_{event_type}" if event_type else property
+        #     data_type_signed = False
+        #     data_type_length = 1
+        else:
+            print("ERROR 1a", main_type)
+            continue
+
+        object_id = int(object_id_raw, 16)
+        # print(object_id_raw,object_id)
+
+        # sanitize property
         property = (
-            row[1].replace(" ", "_").replace(".", "_").replace("(", "").replace(")", "")
+            property.replace(" ", "_")
+            .replace(".", "_")
+            .replace("(", "")
+            .replace(")", "")
         )
-        data_type = row[2]
-        data_type_signed = data_type.startswith("sint")
 
-        data_type_length = 1
-        try:
-            data_type_length = int(re.search("\((\d+)", data_type).group(1))
-        except:
-            pass
-
-        factor = 1
         if main_type == "numeric":
             try:
                 factor = float(row[3])
@@ -65,7 +105,6 @@ for imain in range(4):
                 pass
         accuracy_decimals = int(abs(math.log10(factor)))
 
-        unit_of_measurement = ""
         if main_type == "numeric":
             try:
                 unit_of_measurement = row[6]
@@ -91,9 +130,12 @@ for imain in range(4):
             "measurement_type_hex": object_id_raw,
             "accuracy_decimals": accuracy_decimals,
             "unit_of_measurement": unit_of_measurement,
+            # "event_is_subevent": event_is_subevent,
         }
 
         data.append(sensor_data)
+
+        lastrow = row
 
 # print(list(data[0].values())[0])
 data.sort(key=lambda x: x["measurement_type"])
@@ -270,8 +312,16 @@ namespace bthome_base
 def generate_encoder_enum(data):
     values = []
     for item in data:
+        if item["main_type"] == "numeric":
+            extension = "VALUE"
+        elif item["main_type"] == "binary":
+            extension = "STATE"
+        # elif item["main_type"] == "event_binary":
+        #     extension = "EVENT"
+        else:
+            extension = "__"
         values.append(
-            f'  BTHOME_{item["property_unique"].upper()}_{"VALUE" if item["main_type"]=="numeric" else "STATE"} = {item["measurement_type_hex"]}'
+            f'  BTHOME_{item["property_unique"].upper()}_{extension} = {item["measurement_type_hex"]}'
         )
     return "typedef enum {\n" + ", \n".join(values) + "\n} BTHome_e;\n\n"
 
@@ -284,8 +334,10 @@ f.write(data1)
 
 def generate_decoder_array(data):
     values = []
-    lastelem = data[-1]
-    maxvalue = lastelem["measurement_type"]
+    maxvalue = max(
+        # [item["measurement_type"] for item in data if not item["event_is_subevent"]]
+        [item["measurement_type"] for item in data]
+    )
     for measurement_type in range(maxvalue):
         item = None
         try:
@@ -302,7 +354,7 @@ def generate_decoder_array(data):
                 + f', /* {"0x%02x" %item["measurement_type"]} | {item["property"]} | {item["property_unique"]} | {item["data_type"]} | {item["accuracy_decimals"]} */'
             )
         else:
-            values.append("  0x00, /* N/A */")
+            values.append("  0b00000000, /* unused */")
     names = "\n".join(values)
     return (
         "static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ \n"
@@ -340,7 +392,6 @@ fname = TARGET_DIR + "const_generated.py"
 print(f"generating {fname}...")
 f = open(fname, "w", encoding="utf-8")
 
-main_types = ["numeric", "binary", None, "numeric"]
 for imain in set(main_types):
     if imain is None:
         continue

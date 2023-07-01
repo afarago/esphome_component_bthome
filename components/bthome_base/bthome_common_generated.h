@@ -128,19 +128,19 @@ static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bi
   0b00000001, /* 0x2d | window | window | uint8 (1 byte) | 0 */
   0b00000001, /* 0x2e | humidity | humidity_coarse | uint8 (1 byte) | 0 */
   0b00000001, /* 0x2f | moisture | moisture_coarse | uint8 (1 byte) | 0 */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
-  0x00, /* N/A */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
+  0b00000000, /* unused */
   0b00000010, /* 0x3d | count | count_2 | uint (2 bytes) | 0 */
   0b00000100, /* 0x3e | count | count_4 | uint (4 bytes) | 0 */
   0b00101010, /* 0x3f | rotation | rotation | sint16 (2 bytes) | 1 */

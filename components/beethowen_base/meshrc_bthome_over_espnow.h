@@ -51,7 +51,6 @@ namespace beethowen_base
     void begin();
     void end();
 
-// TODO: check, this should be changing based channel type -- BLE or Beethowen
 #define ESP_NOW_MAX_DATA_LEN 250
 
 #define BEETHOWEN_MAGIC_HEADER_LEN 2

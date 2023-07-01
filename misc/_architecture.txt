@@ -76,6 +76,8 @@ esp add beethowen "server" component option to proxy all incoming data to HA
 
 ####################################
 
+COMMUNICATION:
+--------------
 client->bcast:	0xD2FC, 0x01, 0xABCD 				== find server with passkey 0xABCD
 server->client:	0xD2FC, 0x02, 0xABCD, 0x0B 			== server found or channel 11
 //server->client:	0xD2FC, 0xFF, 0xABCD, 0x22 			== error code 0x22 // e.g. unexpected client key
@@ -90,3 +92,47 @@ client->server:	0xD2FC, 0x16, 0xABCD, 0x40, <BTHomeData> == data packet
 
 //check: can I extend sensor.SENSOR_SCHEMA model with a field e.g. beethowen_measurement_type: temperature + modify def to_code? --? probably not
 
+
+####################################
+
+IDEAS:
+- add auto expiry somehow, sensor dows not support publishing "N/A" / has_value = false
+
+####################################
+
+decode:
+0x3A
+
+3A00 --> binary sensor 3A00
+3A01 --> binary sensor 3A01
+
+3C0103 --> ??? dimmer rotated left by 3
+
+3C0103 -->
+
+beethowen_transmitter
+	id(my_beethowen_transmitter)
+
+script
+	id(my_beethowen_transmitter)->send_event(0x01, 0x03)
+
+
+beethowen_receiver
+	devices:
+		- mac: aa:bb:cc:dd:ee:ff
+		  on_dimmer_event: (subtype, value)
+		  on_button_event: (subtype)
+
+??how is it repeated if not received properly??
+
+typedef enum {
+  BTHOME_BUTTON_EVENT_NONE = 0x00, 
+  BTHOME_BUTTON_EVENT_PRESS = 0x01, 
+  BTHOME_BUTTON_EVENT_LONGPRESS = 0x02, 
+} BTHome_Button_Event_Types_e;
+
+typedef enum {
+  BTHOME_BUTTON_EVENT_NONE = 0x00, 
+  BTHOME_BUTTON_EVENT_PRESS = 0x01, 
+  BTHOME_BUTTON_EVENT_LONGPRESS = 0x02, 
+} BTHome_Button_Event_Types_e;
