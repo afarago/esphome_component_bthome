@@ -36,11 +36,17 @@ without the need of a central hub.
 
     beethowen_receiver:
       dump: unmatched
+      devices:
+        - mac_address: 11:22:33:44:55:55
+          name_prefix: Beethowen TestDevice
+          expected_remote_passkey: 0x1234
+          dump: all
+        - mac_address: AA:BB:CC:DD:EE:FF
+          name_prefix: Beethowen ABCDEF TestDevice
 
     sensor:
       - platform: beethowen_receiver
         mac_address: 11:22:33:44:55:55
-        name_prefix: Beethowen TestDevice
         sensors:
           - measurement_type: temperature
             name: Temperature
@@ -48,9 +54,16 @@ without the need of a central hub.
             name: Temperature_Second
             accuracy_decimals: 2
             unit_of_measurement: °C
-          - measurement_type: count_large
+          - measurement_type: count_4
             name: Count
             unit_of_measurement: cycles
+
+    binary_sensor:
+      - platform: beethowen_receiver
+        mac_address: 11:22:33:44:55:55
+        sensors:
+          - measurement_type: generic_boolean
+            name: D6_gpio
 
 Notes:
 
@@ -77,7 +90,7 @@ As for now the ``wifi`` component with an access point setting should be include
 Configuration variables:
 ************************
 
-- **dump** (*Optional*): Decode and dumpincoming remote readings codes in the logs 
+- **dump** (*Optional*): Decode and dump incoming remote readings codes in the logs 
   (at log.level=DEBUG) for any device.
   
   - **all**: Decode and dump all readings.
@@ -86,7 +99,45 @@ Configuration variables:
 
 - **id** (*Optional*): Manually specify the ID for this Hub.
 
+- **local_passkey** (*Optional*, int, 16-bit): local passkey that serves as an identification or authorization of the node.
 
+- **expected_remote_passkey** (*Optional*, int, 16-bit): remote passkey that identifies or authorizes the incoming communication packet.
+
+- **devices** (*Optional*): List of remote devices connected to this hub. Any devices not specified here, but only in sensor sections will use default settings.
+
+  - **mac_address** (**Required**, mac-address): The address of the sensor.
+
+  - **name_prefix** (*Optional*): Device name to append before any sensor name as a prefix.
+
+  - **dump** (*Optional*): Decode and dump incoming remote readings codes in the logs 
+    (at log.level=DEBUG) for this device.
+
+  - **local_passkey** (*Optional*, int, 16-bit): local passkey that serves as an identification or authorization of the node.
+
+  - **expected_remote_passkey** (*Optional*, int, 16-bit): remote passkey that identifies or authorizes the incoming communication packet.
+
+Authorization with a apremature security concept:
+*************************************************
+
+As ESP-NOW is a a highly insecure channel it is not recommended to use it for purposes above sensing and broacasting.
+Opposed to the BLE broadcast mechanism I have implemented a handshake in which remote client send directed data to preidentified servers.
+
+An optional handshake mechanism is easing this process where each node owns a local passkey that is included in the ransmission and checked on the recepient side.
+Proposed scenario is as follows:
+
+- `beethowen_transmitter` client is looking for a server with find_server message using its local passkey of 0x1234
+
+- `beethowen_receiver` server receives the command, validates the passkey against the expected passkey and answers only if it matches the passkey specified for the selected mac_address client 
+
+- `beethowen_receiver` server answers with a server found response with its local passkey of 0x4567
+
+- `beethowen_transmitter` client receives the command, validates the passkey against the expected passkey and answers only if it matches the passkey specified.
+  As it matches it accepts the server as the valid recepient for the sensing data.
+
+- `beethowen_transmitter` client sends sensor data using its local passkey of 0x1234
+
+- `beethowen_receiver` server receives the sensor data, validates the passkey against the expected passkey and accepts only if it matches the passkey specified for the selected mac_address client.
+  As it matches it accepts the sensor data as the valid recepient for the sensing data.
 
 .. _bthome-sensor:
 
@@ -112,7 +163,6 @@ To initialize a sensor, first supply ``mac_address`` to identify the remote Beet
     sensor:
       - platform: beethowen
         mac_address: 11:22:33:44:55:55
-        name_prefix: Beethowen Test Device
         sensors:
           - measurement_type: temperature
             name: Temperature
@@ -128,17 +178,6 @@ Configuration variables:
 ************************
 
 - **mac_address** (**Required**, mac-address): The address of the sensor.
-
-- **name_prefix** (*Optional*): Device name to append before any sensor name as a prefix.
-
-- **dump** (*Optional*): Decode and dump incoming remote readings codes in the logs 
-  (at log.level=DEBUG) for this device.
-  
-  - **all**: Decode and dump all readings.
-  - **unmatched**: Decode and dump readings that are not mapped in configuration.
-  - **none**: (default) Decode but do not dump any readings.
-
-- **id** (*Optional*): Manually specify the ID for this Hub.
 
 - **sensors** (*Required*): List of remote sensor connected to this virtual device.
   

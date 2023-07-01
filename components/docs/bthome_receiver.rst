@@ -21,11 +21,15 @@ Encryption support might be implemented later on.
 
     bthome_receiver:
       dump: unmatched
+      devices:
+        - mac_address: 11:22:33:44:55:55
+          name_prefix: BTHome TestDevice
+          expected_remote_passkey: 0x1234
+          dump: all
 
     sensor:
       - platform: bthome
         mac_address: 11:22:33:44:55:55
-        name_prefix: BTHome Living Room
         sensors:
           - measurement_type: temperature
             name: Temperature
@@ -78,6 +82,14 @@ Configuration variables:
 
 - **id** (*Optional*): Manually specify the ID for this Hub.
 
+- **devices** (*Optional*): List of remote devices connected to this hub. Any devices not specified here, but only in sensor sections will use default settings.
+
+  - **mac_address** (**Required**, mac-address): The address of the sensor.
+
+  - **name_prefix** (*Optional*): Device name to append before any sensor name as a prefix.
+
+  - **dump** (*Optional*): Decode and dump incoming remote readings codes in the logs 
+    (at log.level=DEBUG) for this device.
 
 
 .. _bthome-sensor:
@@ -104,7 +116,6 @@ To initialize a sensor, first supply ``mac_address`` to identify the remote BTHo
     sensor:
       - platform: bthome
         mac_address: 11:22:33:44:55:55
-        name_prefix: BTHome Living Room
         sensors:
           - measurement_type: temperature
             name: Temperature
@@ -122,17 +133,6 @@ Configuration variables:
 ************************
 
 - **mac_address** (**Required**, mac-address): The address of the sensor.
-
-- **name_prefix** (*Optional*): Device name to append before any sensor name as a prefix.
-
-- **dump** (*Optional*): Decode and dump incoming remote readings codes in the logs 
-  (at log.level=DEBUG) for this device.
-  
-  - **all**: Decode and dump all readings.
-  - **unmatched**: Decode and dump readings that are not mapped in configuration.
-  - **none**: (default) Decode but do not dump any readings.
-
-- **id** (*Optional*): Manually specify the ID for this Hub.
 
 - **sensors** (*Required*): List of remote sensor connected to this virtual device.
   

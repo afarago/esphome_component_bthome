@@ -42,11 +42,8 @@ esphome:
     # - beethowen_transmitter.send
 
 external_components:
-  # - source: github://afarago/esphome_component_computhermqrf
-  #   refresh: 1min
-  - source:
-      type: local
-      path: ../../esphome_components/bthome/components
+  - source: github://afarago/esphome_component_computhermqrf
+    refresh: 1min
 
 esp8266:
   board: d1_mini
@@ -76,7 +73,7 @@ beethowen_transmitter:
     #   sensor_id: bmp085_pressure_sensor
     - measurement_type: duration
       sensor_id: cycle_time
-    - measurement_type: count_large
+    - measurement_type: count_4
       sensor_id: cycle_counter
     - measurement_type: voltage
       sensor_id: battery_voltage

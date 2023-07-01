@@ -9,9 +9,8 @@ esp32:
   # wemos_d1_mini32
 
 external_components:
-  - source:
-      type: local
-      path: ../../esphome_components/bthome/components
+  - source: github://afarago/esphome_component_computhermqrf
+    refresh: 1min
 
 logger:
   level: debug
@@ -30,17 +29,18 @@ esp32_ble_tracker:
     active: false
 
 bthome_receiver:
-  # dump_unmatched: true
-  # dump: unmatched | all
-  # dump: unmatched
-  dump: all
+  dump: unmatched
+  devices:
+    - mac_address: 11:22:33:44:55:66
+      name_prefix: BTHome Living Room
+    - mac_address: AA:BB:CC:DD:EE:FF
+      name_prefix: BTHome Garage
+    - mac_address: 22:33:44:55:66:77
+      dump: all
 
 sensor:
   - platform: bthome_receiver
-    mac_address: !secret mac_nappali
-    name_prefix: BTHome Nappali
-    # dump: unmatched | all
-    # dump: all
+    mac_address: 11:22:33:44:55:66
     sensors:
       - measurement_type: temperature
         name: Temperature
@@ -50,8 +50,7 @@ sensor:
         name: PacketId
 
   - platform: bthome_receiver
-    mac_address: !secret mac_garazs
-    name_prefix: BTHome Garazs
+    mac_address: AA:BB:CC:DD:EE:FF
     sensors:
       - measurement_type: temperature
         name: Temperature
@@ -61,19 +60,18 @@ sensor:
         unit_of_measurement: °C
       - measurement_type: 0x02
         name: Temperature 3
-      - measurement_type: count_large
+      - measurement_type: count_4
         name: Count
 
   - platform: bthome_receiver
-    mac_address: !secret mac_dolgozo
-    dump: all
+    mac_address: 22:33:44:55:66:77
     sensors:
       - measurement_type: temperature
-        name: BTHome Dolgozó Temperature
+        name: BTHome Workshop Temperature
 
 binary_sensor:
   - platform: bthome_receiver
-    mac_address: !secret mac_garazs
+    mac_address: AA:BB:CC:DD:EE:FF
     sensors:
       - measurement_type: opening
-        name: BTHome Opening Garazs
+        name: Garage

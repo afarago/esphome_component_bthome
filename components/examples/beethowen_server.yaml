@@ -5,10 +5,9 @@ esphome:
   name: $systemName
 
 external_components:
-  - source:
-      type: local
-      path: ../../esphome_components/bthome/components
-    # components: [ beethowen, beethowen_base, bthome_base ]
+  - source: github://afarago/esphome_component_computhermqrf
+    refresh: 1min
+
 
 esp8266:
   board: d1_mini
@@ -93,7 +92,7 @@ sensor:
       - measurement_type: pressure
         name: Pressure
 
-      - measurement_type: count_large
+      - measurement_type: count_4
         name: Count
         unit_of_measurement: cycles
       - measurement_type: duration

@@ -1,9 +1,8 @@
 Beethowen Transmitter
 =====================
 
-**Beethowen** is an energy efficient method to transfer data over 
-`ESP-NOW <https://www.espressif.com/en/solutions/low-power-solutions/esp-now>`_ Wireless 
-Communication Protocol by Espressif Systems between two devices.
+**Beethowen** is an energy efficient method to transfer data over `ESP-NOW <https://www.espressif.com/en/solutions/low-power-solutions/esp-now>`
+Wireless Communication Protocol by Espressif Systems between two devices.
 *The name came from a playful 2 am brainstorming from "BTHome" + "Over" + "Esp-NoW".*
 
 This component implements local trasmitter and encoding hub.
@@ -32,15 +31,7 @@ This component implements local trasmitter and encoding hub.
         - ESP8266WiFi
       on_loop:
       then:
-        - lambda: |-
-            static bool update_requested = false;
-            if (!update_requested) {
-              id(my_bmp085).update();
-              update_requested = true;
-            } else if (id(bmp085_temperature_sensor).has_state()) {
-              id(my_beethowen_transmitter).transmit();
-              id(my_deep_sleep).begin_sleep(true);
-            }
+        - component.update: my_bmp085
 
     beethowen_transmitter:
       id: my_beethowen_transmitter
@@ -105,9 +96,39 @@ Configuration variables:
 
 - **auto_send** (*Optional*, boolean): Regularly check all connected sensors and once all provide a valid state automatically send data.
 
+- **local_passkey** (*Optional*, int, 16-bit): local passkey that serves as an identification or authorization of the node.
+
+- **expected_remote_passkey** (*Optional*, int, 16-bit): remote passkey that identifies or authorizes the incoming communication packet.
+
 Automations
 ***********
 - **on_finished_send** (*Optional*, Automation): An automation to perform when a transmission is finished.
+
+
+Authorization with a apremature security concept:
+*************************************************
+
+As ESP-NOW is a a highly insecure channel it is not recommended to use it for purposes above sensing and broacasting.
+Opposed to the BLE broadcast mechanism I have implemented a handshake in which remote client send directed data to preidentified servers.
+
+An optional handshake mechanism is easing this process where each node owns a local passkey that is included in the ransmission and checked on the recepient side.
+Proposed scenario is as follows:
+
+- `beethowen_transmitter` client is looking for a server with find_server message using its local passkey of 0x1234
+
+- `beethowen_receiver` server receives the command, validates the passkey against the expected passkey and answers only if it matches the passkey specified for the selected mac_address client 
+
+- `beethowen_receiver` server answers with a server found response with its local passkey of 0x4567
+
+- `beethowen_transmitter` client receives the command, validates the passkey against the expected passkey and answers only if it matches the passkey specified.
+  As it matches it accepts the server as the valid recepient for the sensing data.
+
+- `beethowen_transmitter` client sends sensor data using its local passkey of 0x1234
+
+- `beethowen_receiver` server receives the sensor data, validates the passkey against the expected passkey and accepts only if it matches the passkey specified for the selected mac_address client.
+  As it matches it accepts the sensor data as the valid recepient for the sensing data.
+
+
 
 .. _bthome-sensor:
 
