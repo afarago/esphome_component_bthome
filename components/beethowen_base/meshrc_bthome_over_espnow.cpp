@@ -50,6 +50,7 @@ namespace beethowen_base
 		// WiFi.mode(WIFI_AP);
 		WiFi.softAP("temp", "temppass", channel, true, 0); // flash write to optimize...
 		WiFi.mode(WIFI_STA);
+		// ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 		WiFi.channel(channel);
 	}
 
@@ -60,10 +61,23 @@ namespace beethowen_base
 		sendTime = micros();
 		bool success = false;
 		sending_success = false;
-		// ESP_LOGD("custom", "meshRC send");
+		// ESP_LOGD("custom", "meshRC send {size}:%d", size);
 		if (esp_now_is_init)
 		{
-			success = (esp_now_send(dest ? dest : broadcast, data, size) == OK); // TODO; ESP32 has ESP_OK
+#if defined(USE_ESP8266)
+			success = esp_now_send(dest ? dest : broadcast, data, size) == OK;
+#elif defined(USE_ESP32)
+			uint8_t *addr = dest ? dest : broadcast;
+			if (!esp_now_is_peer_exist(addr))
+				addPeer(addr);
+
+			/*
+			** On ESP32 devices, the Espressif ESP-NOW software requires that other devices (peers) must be registered using add_peer() before we can send() them messages (this is not enforced on ESP8266 devices). It is not necessary to register a peer to receive an un-encrypted message from that peer.
+			** Encrypted messages: To receive an encrypted message, the receiving device must first register the sender and use the same encryption keys as the sender (PMK and LMK) (see set_pmk() and add_peer().
+			*/
+
+			success = esp_now_send(addr, data, size) == ESP_OK;
+#endif
 		}
 		else
 		{
@@ -145,35 +159,53 @@ namespace beethowen_base
 		return true;
 	}
 
-#ifdef USE_ESP32
-	void setAddr(uint8_t *addr)
+#if defined(USE_ESP8266) or defined(USE_ESP32)
+	void addPeer(uint8_t *addr)
 	{
 		if (esp_now_is_peer_exist(addr))
 			esp_now_del_peer(addr);
-		esp_now_peer_info_t peerInfo;
+#if defined(USE_ESP32)
+		esp_now_peer_info_t peerInfo = {};
 		peerInfo.channel = 0;
 		peerInfo.encrypt = false;
 		memcpy(peerInfo.peer_addr, addr, 6);
 		esp_now_add_peer(&peerInfo);
+#elif defined(USE_ESP8266)
+		esp_now_add_peer(addr, ESP_NOW_ROLE_COMBO, 1, 0, 0);
+#endif
 	}
 
+#if defined(USE_ESP32)
 	void sendHandler(const uint8_t *addr, esp_now_send_status_t sendStatus)
+#elif defined(USE_ESP8266)
+	esp_now_send_cb_t sendHandler = [](uint8_t *addr, uint8_t sendStatus)
+#endif
 	{
-		if (sendStatus == ESP_NOW_SEND_SUCCESS)
+		if
+#if defined(USE_ESP32)
+			(sendStatus == ESP_NOW_SEND_SUCCESS)
+#elif defined(USE_ESP8266)
+			(sendStatus == 0)
+#endif
 		{
 			// ESP_LOGD("custom", "meshRC message succesfully sent");
+			sending_success = true;
 		}
 		else
 		{
-			// ESP_LOGD("custom", "meshRC message not succesfully sent");
+			// ESP_LOGD("custom", "meshRC message not succesfully sent, status:%d", sendStatus);
+			sending_success = false;
 			sent_error++;
 		}
-		sending_success = sendStatus == ESP_NOW_SEND_SUCCESS;
 		sending = false;
 		duration = micros() - sendTime;
-	}
+	};
 
+#if defined(USE_ESP32)
 	void recvHandler(const uint8_t *addr, const uint8_t *data, int size)
+#elif defined(USE_ESP8266)
+	esp_now_recv_cb_t recvHandler = [](uint8_t *addr, uint8_t *data, uint8_t size)
+#endif
 	{
 		static uint8_t offset, i;
 		// Only receives from master if set
@@ -181,77 +213,6 @@ namespace beethowen_base
 		{
 			received++;
 			sender = (uint8_t *)addr;
-			for (i = 0; i < events_num; i++)
-			{
-				offset = events[i].prefix.length();
-				if (equals(data, (uint8_t *)events[i].prefix.c_str(), offset))
-				{
-					if (events[i].callback)
-						events[i].callback();
-					if (events[i].callback2)
-						events[i].callback2(&data[offset], size - offset);
-				}
-			}
-		}
-		else
-		{
-			ignored++;
-		}
-	}
-
-	void begin()
-	{
-		if (esp_now_init() == ESP_OK)
-		{
-			esp_now_is_init = true;
-			if (esp_now_is_peer_exist(broadcast))
-			{
-				esp_now_del_peer(broadcast);
-			}
-			esp_now_peer_info_t peerInfo = {};
-			peerInfo.channel = 0;
-			peerInfo.encrypt = false;
-			memcpy(peerInfo.peer_addr, broadcast, 6);
-			esp_now_add_peer(&peerInfo);
-			esp_now_register_send_cb(sendHandler);
-			esp_now_register_recv_cb(recvHandler);
-		}
-	}
-#endif
-
-#ifdef USE_ESP8266
-	void setAddr(uint8_t *addr)
-	{
-		if (esp_now_is_peer_exist(addr))
-			esp_now_del_peer(addr);
-		esp_now_add_peer(addr, ESP_NOW_ROLE_COMBO, 1, 0, 0);
-	}
-
-	esp_now_send_cb_t sendHandler = [](uint8_t *addr, uint8_t sendStatus)
-	{
-		if (sendStatus == 0)
-		{
-			// NOOP
-			// ESP_LOGD("custom", "meshRC message succesfully sent");
-		}
-		if (sendStatus == 1)
-		{
-			// ESP_LOGD("custom", "meshRC message not succesfully sent %d", sendStatus);
-			sent_error++;
-		}
-		sending_success = sendStatus == 0;
-		sending = false;
-		duration = micros() - sendTime;
-	};
-
-	esp_now_recv_cb_t recvHandler = [](uint8_t *addr, uint8_t *data, uint8_t size)
-	{
-		static uint8_t offset, i;
-		// Only receives from master if set
-		if (addr == NULL || master == NULL || equals(addr, master, 6))
-		{
-			received++;
-			sender = addr;
 
 			uint8_t command = data[BEETHOWEN_MAGIC_HEADER_LEN];
 			if (equals(data, BEETHOWEN_MAGIC_HEADER, BEETHOWEN_MAGIC_HEADER_LEN))
@@ -272,26 +233,32 @@ namespace beethowen_base
 
 	void end()
 	{
-		// TODO: add to ESP32
 		esp_now_unregister_recv_cb();
 		esp_now_unregister_send_cb();
 	}
 
 	void begin()
 	{
-		if (esp_now_init() == OK)
+		if
+#if defined(USE_ESP32)
+			(esp_now_init() == ESP_OK)
+#elif defined(USE_ESP8266)
+			(esp_now_init() == OK)
+#endif
 		{
+			// uint32_t version;
+			// esp_now_get_version(&version);
+			// ESP_LOGD("custom", "{esp-now version}:%d", version);
+
 			esp_now_is_init = true;
-			if (esp_now_is_peer_exist(broadcast))
-			{
-				esp_now_del_peer(broadcast);
-			}
+#if defined(USE_ESP8266)
 			esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
-			esp_now_add_peer(broadcast, ESP_NOW_ROLE_COMBO, 1, 0, 0);
+#endif
+			addPeer(broadcast);
 			esp_now_register_send_cb(sendHandler);
 			esp_now_register_recv_cb(recvHandler);
 		}
 	}
+#endif // ESP32 or ESP8266
 
-#endif
-} // namespace MeshRC
+} // namespace beethowen_base

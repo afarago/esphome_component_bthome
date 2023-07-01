@@ -174,11 +174,6 @@ send
 ~~~~
 This action collects all connected sensor data and sends them thorugh the beethowen channel.
 
-Warning
--------
-  
-* Supports ESP8266 is completed ESP32 support will be added shortly.
-
 See Also
 --------
 

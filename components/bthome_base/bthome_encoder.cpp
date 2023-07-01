@@ -119,7 +119,7 @@ namespace bthome_base
     break;
     case HaBleType_sint:
     {
-      sint64_t value2s = static_cast<sint64_t>(value * factor);
+      int64_t value2s = static_cast<int64_t>(value * factor);
       value2 = signextend<uint64_t, 64>(value2s);
     }
     break;

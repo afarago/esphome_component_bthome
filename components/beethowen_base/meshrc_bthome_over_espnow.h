@@ -11,6 +11,7 @@
 #ifdef USE_ESP32
 #include <esp_now.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #endif
 #ifdef USE_ESP8266
 // included due to compilation error in espnow for missing u8 type
@@ -26,12 +27,11 @@ namespace beethowen_base
 {
 
 #ifdef USE_ESP32
-    typedef std::function<void(const uint8_t *, int)> esp_rc_data_callback_t; //!!TODO
+    typedef std::function<void(const uint8_t, const uint8_t *, const int)> esp_rc_command_callback_t;
 #endif
 #ifdef USE_ESP8266
-    typedef std::function<void(uint8_t *, uint8_t)> esp_rc_data_callback_t;
+    typedef std::function<void(const uint8_t, uint8_t *, const int)> esp_rc_command_callback_t;
 #endif
-    typedef std::function<void(uint8_t, uint8_t *, uint8_t)> esp_rc_command_callback_t;
 
     extern bool sending;
     extern bool sending_success;
@@ -47,7 +47,8 @@ namespace beethowen_base
     // bool send_data(uint8_t *dest, uint8_t *data, uint8_t size);
     bool on_command(esp_rc_command_callback_t callback);
     void wait();
-    void setAddr(uint8_t *addr);
+    void delayMs(uint32_t time);
+    void addPeer(uint8_t *addr);
     void begin();
     void end();
 

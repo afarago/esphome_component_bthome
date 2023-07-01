@@ -39,9 +39,9 @@ namespace esphome
 
     void BeethowenReceiverHub::beethowen_on_command_(uint8_t command, uint8_t *buffer, uint8_t size)
     {
-#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
-      ESP_LOGD(TAG, "Command received: %d, from: %s", command, bthome_base::addr_to_str(beethowen_base::sender).c_str());
-#endif // ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+      ESP_LOGD(TAG, "Command received: 0x%02x, from: %s", command, bthome_base::addr_to_str(beethowen_base::sender).c_str());
+#endif // ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
 
       auto client_mac_a64 = bthome_base::addr_to_uint64(beethowen_base::sender);
       auto device = static_cast<BeethowenReceiverDevice *>(get_device_by_address(client_mac_a64));
