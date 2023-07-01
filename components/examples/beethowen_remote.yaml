@@ -6,10 +6,6 @@ globals:
     type: uint64_t
     restore_value: true
     initial_value: "0"
-  # - id: my_cycle_counter_small
-  #   type: uint8_t
-  #   restore_value: true
-  #   initial_value: "0"
   - id: my_last_cycle_time
     type: int
     restore_value: true
@@ -17,29 +13,17 @@ globals:
     type: uint64_t
     restore_value: true
 
-# wifi:
-#   ssid: !secret wifi_ssid
-#   password: !secret wifi_password
-#   enable_on_boot: false
-
 esphome:
   name: $systemName
   libraries:
     - ESP8266WiFi
   on_boot:
-    #   priority: 600
-    #   then:
     - lambda: |-
         if (id(my_server_data)) id(my_beethowen_transmitter)->set_server_data(id(my_server_data));
     - lambda: |-
-        //ESP_LOGD("time", "%d", millis());
         if (!isnan(id(my_cycle_counter)) && id(my_cycle_counter)>0) id(my_cycle_counter)++; else id(my_cycle_counter)=1;
-        // if (!isnan(id(my_cycle_counter_small))) id(my_cycle_counter_small)++; else id(my_cycle_counter_small)=1;
         ESP_LOGI("custom", "Cycle count %d.", id(my_cycle_counter));
-        //ESP_LOGD("time", "%d", millis());
     - component.update: my_bmp085
-    # - delay: 10 sec
-    # - beethowen_transmitter.send
 
 external_components:
   - source: github://afarago/esphome_component_computhermqrf
@@ -50,68 +34,36 @@ esp8266:
   restore_from_flash: false
 
 logger:
-  # level: debug
-  level: warn
-  # baud_rate: 0
+  level: debug
 
 i2c:
-  # sda: 21 D2
-  # scl: 22 D1
   scan: false
   id: bus_a
 
 beethowen_transmitter:
   id: my_beethowen_transmitter
-  # connect_passkey: 0x1234
   # local_passkey: 0x1234
   # remote_expected_passkey: 0x5678
   connect_persistent: true
   sensors:
     - measurement_type: temperature
       sensor_id: bmp085_temperature_sensor
-    # - measurement_type: pressure
-    #   sensor_id: bmp085_pressure_sensor
     - measurement_type: duration
       sensor_id: cycle_time
     - measurement_type: count_4
       sensor_id: cycle_counter
     - measurement_type: voltage
       sensor_id: battery_voltage
-    # - measurement_type: generic_boolean
-    #   sensor_id: binary_d6
-    # - measurement_type: count_small
-    #   variable_id: my_cycle_counter_small
+    - measurement_type: generic_boolean
+      sensor_id: binary_d6
   auto_send: true
   on_send_finished:
     - lambda: |-
         id(my_server_data) = id(my_beethowen_transmitter)->get_server_data();
         id(my_last_cycle_time) = millis();
     - deep_sleep.enter
-    # - lambda: |-
-    #     ESP_LOGD("app", "on_finished_send lambda");
-    #     id(my_deep_sleep).begin_sleep(true);
-
-# interval:
-#   on_time:
-#     - seconds: /10
-#       then:
-#         - lambda: |-
-#             id(my_beethowen_transmitter).transmit();
 
 sensor:
-  #   - platform: beethowen_transmitter
-  #     name: Beethowen TestDevice Temperature
-  #     measurement_type: temperature
-  #     lambda: |-
-  #       auto value = id(bmp085_temperature_sensor).state;
-  #       return value;
-  #   - platform: beethowen_transmitter
-  #     name: Beethowen TestDevice Pressure
-  #     measurement_type: pressure
-  #     lambda: |-
-  #       auto value = id(bmp085_pressure_sensor).state;
-  #       return value;
-
   - platform: bmp085
     id: my_bmp085
     temperature:
@@ -121,67 +73,32 @@ sensor:
         - lambda: |-
             if (x > 0.0) return x;
             else return {};
-        # - lambda: |-
-        #     id(my_beethowen_transmitter).register_reading(id(bmp085_temperature_sensor), 0x02, x)
-  #   pressure:
-  #     id: bmp085_pressure_sensor
-  #     internal: true
   - platform: adc
     pin: A0
     # pin: VCC ## debug, but remove multiply
     id: battery_voltage
-    #update_interval: 5s
     accuracy_decimals: 4
     unit_of_measurement: "V"
-    # name: "${systemName}.battery_voltage"
     filters:
       # 4.2 V is scaled down to 1.0 V
       - filter_out: nan # <-- Processing will stop here on unknown values.
       - multiply: 4.2
-    # lambda: |-
-    #   id(battery_level).update();
   - platform: template
     id: cycle_time
     lambda: |-
-      // could even store it in a variable - but it is simpler this way
-      // return (float)millis() / 1000.0;
       return (float)id(my_last_cycle_time) / 1000.0;
   - platform: template
     id: cycle_counter
     lambda: |-
       return id(my_cycle_counter);
 
-    ### update_interval: 0s
-#   - platform: template
-#     # id: "battery_level"
-#     name: "${systemName}.battery_level"
-#     id: battery_level
-#     #accuracy_decimals: 0
-#     accuracy_decimals: 3 ## temp for deepsleep measurements accuracy
-#     unit_of_measurement: "%"
-#     ### update_interval: 0s
-#     #update_interval: 5s
-#     lambda: |-
-#       // 4.2 LiPo max, 3.0V shutdown -> pct = (4.2-3.0)/(4.2-3.0)
-#       //float value = (id(adca0).state - 3.00) / 1.20 * 100.00;
-#       // filters will be applied to do the scaling
-#       float value = (id(battery_voltage).state - 4.2) / 2.7;
-#       // ESP_LOGD("espnow1", "BL %f", value);
-#       return value;
-
-# binary_sensor:
-#   - platform: gpio
-#     pin: D6
-#     id: binary_d6
-#     internal: true
+binary_sensor:
+  - platform: gpio
+    pin: D6
+    id: binary_d6
+    internal: true
 
 deep_sleep:
-  # run_duration: 20s # max run duration for safeguarding
-  run_duration: 1h
-  sleep_duration: 5s # test purpose -- above 60s
+  run_duration: 20s # max run duration for safeguarding
+  sleep_duration: 60s
   id: my_deep_sleep
-  # auto_connect: false
-# https://flowduino.com/2021/08/23/esp-now-pin-depth-with-automatic-discovery-pairing-part-two/
-# https://randomnerdtutorials.com/esp-now-auto-pairing-esp32-esp8266/
-# https://github.com/Servayejc
-# https://github.com/softplus/esp8266-wifi-timing/blob/main/arduino_sketches/test_wifi_speed_flash/wifi_helper.cpp
