@@ -146,16 +146,8 @@ namespace esphome
         encoder.buildPaket(bthome_data, bthome_data_len);
 
         // ESP_LOGD(TAG, "buildPaket: {len}:%d {last}:0x%02x", bthome_data_len, bthome_data[bthome_data_len - 1]);
-        for (auto i = 0; i < 5; i++)
-        {
-          // uint8_t *addr = get_server_address_arr();
-          // ESP_LOGD(TAG, ". to: %s", bthome_base::addr_to_str(addr).c_str());
-          if (beethowen_base::send_command_data(get_server_address_arr(), bthome_data, bthome_data_len, local_passkey_))
-            beethowen_base::wait();
-
-          if (beethowen_base::sending_success)
-            break;
-        }
+        if (beethowen_base::send_command_data(get_server_address_arr(), bthome_data, bthome_data_len, local_passkey_))
+          beethowen_base::wait();
 
         success = beethowen_base::sending_success;
       }

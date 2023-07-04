@@ -33,11 +33,11 @@ namespace esphome
       beethowen_base::begin(); // call it only once
 
       // setup wifinow hooks
-      beethowen_base::on_command([&](uint8_t command, uint8_t *buffer, uint8_t size)
+      beethowen_base::on_command([&](const uint8_t command, const uint8_t *buffer, const int size)
                                  { this->beethowen_on_command_(command, buffer, size); });
     }
 
-    void BeethowenReceiverHub::beethowen_on_command_(uint8_t command, uint8_t *buffer, uint8_t size)
+    void BeethowenReceiverHub::beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size)
     {
 #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
       ESP_LOGD(TAG, "Command received: 0x%02x, from: %s", command, bthome_base::addr_to_str(beethowen_base::sender).c_str());

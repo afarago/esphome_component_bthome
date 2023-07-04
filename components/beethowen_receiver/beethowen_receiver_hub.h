@@ -25,8 +25,7 @@ namespace esphome
     protected:
       uint16_t local_passkey_{0};
 
-      void beethowen_on_data_(uint8_t *data, uint8_t size);
-      void beethowen_on_command_(uint8_t command, uint8_t *buffer, uint8_t size);
+      void beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size);
     };
   }
 }
