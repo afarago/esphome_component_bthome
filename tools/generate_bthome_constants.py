@@ -7,6 +7,15 @@ import re
 import pprint
 from collections import OrderedDict
 
+import helpers
+
+# import sys
+# sys.path.append("../components")
+# import bthome_base.const_generated
+# print(bthome_base.const_generated.MEASUREMENT_TYPES_NUMERIC_SENSOR)
+# print(sensor.DEVICE_CLASSES)
+# print(binary_sensor.DEVICE_CLASSES)
+
 # class BTHomeType:
 #     def __init__(self, object_id, property, data_type, factor, example, result, unit):
 #         self.object_id = object_id
@@ -48,7 +57,7 @@ for imain in range(4):
     lastrow = []
     for row in table.findAll("tr"):
         factor = 1
-        unit_of_measurement = ""
+        unit_of_measurement = None
 
         row = row.find_all("td")
         row = [ele.text.strip() for ele in row]
@@ -130,6 +139,10 @@ for imain in range(4):
             "measurement_type_hex": object_id_raw,
             "accuracy_decimals": accuracy_decimals,
             "unit_of_measurement": unit_of_measurement,
+            "device_class": helpers.find_matching_device_class(
+                object_id, property, main_type
+            ),
+            # "icon": helpers.find_matching_icon(object_id, property, main_type) # NOTE: check and understand how and which default icon is assigned in home assistant
             # "event_is_subevent": event_is_subevent,
         }
 
@@ -379,13 +392,27 @@ f.close()
 
 
 def generate_const(data, main_type):
-    values = []
+    values = {}
     for item in data:
         if item["main_type"] == main_type:
-            values.append(
-                f'  "{item["property_unique"]}": {{ "measurement_type": {item["measurement_type_hex"]}, "accuracy_decimals": {item["accuracy_decimals"]}, "unit_of_measurement": "{item["unit_of_measurement"]}" }},'
-            )
-    return "\n".join(values)
+            convitem = {"measurement_type": item["measurement_type"]}
+            if item["accuracy_decimals"] != None:
+                convitem["accuracy_decimals"] = item["accuracy_decimals"]
+            if item["unit_of_measurement"] != None:
+                convitem["unit_of_measurement"] = item["unit_of_measurement"]
+            if item["device_class"] != None:
+                convitem["device_class"] = item["device_class"]
+            # if item["icon"] != None: # NOTE: check and understand how and which default icon is assigned in home assistant
+            #     convitem["icon"] = item["icon"]
+            values[item["property_unique"]] = convitem
+
+    retval = json.dumps(values, indent=4, ensure_ascii=False)
+    # retval = re.sub('(\"measurement_type\": )(\d+)', lambda i: hex(int(i.group(1))),retval)
+    retval = re.sub(
+        '(?<="measurement_type": )(\d+)', lambda i: f"0x{int(i.group(0)):02x}", retval
+    )
+
+    return retval
 
 
 fname = TARGET_DIR + "const_generated.py"
@@ -396,9 +423,9 @@ for imain in set(main_types):
     if imain is None:
         continue
 
-    f.write(f"MEASUREMENT_TYPES_{imain.upper()}_SENSOR = {{\n")
+    f.write(f"MEASUREMENT_TYPES_{imain.upper()}_SENSOR = ")
     data1 = generate_const(data, imain)
     f.write(data1)
-    f.write("\n}\n")
+    f.write("\n")
 
 f.close()

@@ -1,74 +1,385 @@
 MEASUREMENT_TYPES_BINARY_SENSOR = {
-  "generic_boolean": { "measurement_type": 0x0F, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "power": { "measurement_type": 0x10, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "opening": { "measurement_type": 0x11, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "battery": { "measurement_type": 0x15, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "battery_charging": { "measurement_type": 0x16, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "carbon_monoxide": { "measurement_type": 0x17, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "cold": { "measurement_type": 0x18, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "connectivity": { "measurement_type": 0x19, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "door": { "measurement_type": 0x1A, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "garage_door": { "measurement_type": 0x1B, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "gas": { "measurement_type": 0x1C, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "heat": { "measurement_type": 0x1D, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "light": { "measurement_type": 0x1E, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "lock": { "measurement_type": 0x1F, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "moisture": { "measurement_type": 0x20, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "motion": { "measurement_type": 0x21, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "moving": { "measurement_type": 0x22, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "occupancy": { "measurement_type": 0x23, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "plug": { "measurement_type": 0x24, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "presence": { "measurement_type": 0x25, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "problem": { "measurement_type": 0x26, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "running": { "measurement_type": 0x27, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "safety": { "measurement_type": 0x28, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "smoke": { "measurement_type": 0x29, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "sound": { "measurement_type": 0x2A, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "tamper": { "measurement_type": 0x2B, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "vibration": { "measurement_type": 0x2C, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "window": { "measurement_type": 0x2D, "accuracy_decimals": 0, "unit_of_measurement": "" },
+    "generic_boolean": {
+        "measurement_type": 0x0f,
+        "accuracy_decimals": 0
+    },
+    "power": {
+        "measurement_type": 0x10,
+        "accuracy_decimals": 0,
+        "device_class": "power"
+    },
+    "opening": {
+        "measurement_type": 0x11,
+        "accuracy_decimals": 0,
+        "device_class": "opening"
+    },
+    "battery": {
+        "measurement_type": 0x15,
+        "accuracy_decimals": 0,
+        "device_class": "battery"
+    },
+    "battery_charging": {
+        "measurement_type": 0x16,
+        "accuracy_decimals": 0,
+        "device_class": "battery"
+    },
+    "carbon_monoxide": {
+        "measurement_type": 0x17,
+        "accuracy_decimals": 0,
+        "device_class": "carbon_monoxide"
+    },
+    "cold": {
+        "measurement_type": 0x18,
+        "accuracy_decimals": 0,
+        "device_class": "cold"
+    },
+    "connectivity": {
+        "measurement_type": 0x19,
+        "accuracy_decimals": 0,
+        "device_class": "connectivity"
+    },
+    "door": {
+        "measurement_type": 0x1a,
+        "accuracy_decimals": 0,
+        "device_class": "door"
+    },
+    "garage_door": {
+        "measurement_type": 0x1b,
+        "accuracy_decimals": 0,
+        "device_class": "garage_door"
+    },
+    "gas": {
+        "measurement_type": 0x1c,
+        "accuracy_decimals": 0,
+        "device_class": "gas"
+    },
+    "heat": {
+        "measurement_type": 0x1d,
+        "accuracy_decimals": 0,
+        "device_class": "heat"
+    },
+    "light": {
+        "measurement_type": 0x1e,
+        "accuracy_decimals": 0,
+        "device_class": "light"
+    },
+    "lock": {
+        "measurement_type": 0x1f,
+        "accuracy_decimals": 0,
+        "device_class": "lock"
+    },
+    "moisture": {
+        "measurement_type": 0x20,
+        "accuracy_decimals": 0,
+        "device_class": "moisture"
+    },
+    "motion": {
+        "measurement_type": 0x21,
+        "accuracy_decimals": 0,
+        "device_class": "motion"
+    },
+    "moving": {
+        "measurement_type": 0x22,
+        "accuracy_decimals": 0,
+        "device_class": "moving"
+    },
+    "occupancy": {
+        "measurement_type": 0x23,
+        "accuracy_decimals": 0,
+        "device_class": "occupancy"
+    },
+    "plug": {
+        "measurement_type": 0x24,
+        "accuracy_decimals": 0,
+        "device_class": "plug"
+    },
+    "presence": {
+        "measurement_type": 0x25,
+        "accuracy_decimals": 0,
+        "device_class": "presence"
+    },
+    "problem": {
+        "measurement_type": 0x26,
+        "accuracy_decimals": 0,
+        "device_class": "problem"
+    },
+    "running": {
+        "measurement_type": 0x27,
+        "accuracy_decimals": 0,
+        "device_class": "running"
+    },
+    "safety": {
+        "measurement_type": 0x28,
+        "accuracy_decimals": 0,
+        "device_class": "safety"
+    },
+    "smoke": {
+        "measurement_type": 0x29,
+        "accuracy_decimals": 0,
+        "device_class": "smoke"
+    },
+    "sound": {
+        "measurement_type": 0x2a,
+        "accuracy_decimals": 0,
+        "device_class": "sound"
+    },
+    "tamper": {
+        "measurement_type": 0x2b,
+        "accuracy_decimals": 0,
+        "device_class": "tamper"
+    },
+    "vibration": {
+        "measurement_type": 0x2c,
+        "accuracy_decimals": 0,
+        "device_class": "vibration"
+    },
+    "window": {
+        "measurement_type": 0x2d,
+        "accuracy_decimals": 0,
+        "device_class": "window"
+    }
 }
 MEASUREMENT_TYPES_NUMERIC_SENSOR = {
-  "packet_id": { "measurement_type": 0x00, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "battery": { "measurement_type": 0x01, "accuracy_decimals": 0, "unit_of_measurement": "%" },
-  "temperature": { "measurement_type": 0x02, "accuracy_decimals": 2, "unit_of_measurement": "°C" },
-  "humidity": { "measurement_type": 0x03, "accuracy_decimals": 2, "unit_of_measurement": "%" },
-  "pressure": { "measurement_type": 0x04, "accuracy_decimals": 2, "unit_of_measurement": "hPa" },
-  "illuminance": { "measurement_type": 0x05, "accuracy_decimals": 2, "unit_of_measurement": "lux" },
-  "mass_kg": { "measurement_type": 0x06, "accuracy_decimals": 2, "unit_of_measurement": "kg" },
-  "mass_lb": { "measurement_type": 0x07, "accuracy_decimals": 2, "unit_of_measurement": "lb" },
-  "dewpoint": { "measurement_type": 0x08, "accuracy_decimals": 2, "unit_of_measurement": "°C" },
-  "count": { "measurement_type": 0x09, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "energy": { "measurement_type": 0x0A, "accuracy_decimals": 3, "unit_of_measurement": "kWh" },
-  "power": { "measurement_type": 0x0B, "accuracy_decimals": 2, "unit_of_measurement": "W" },
-  "voltage": { "measurement_type": 0x0C, "accuracy_decimals": 3, "unit_of_measurement": "V" },
-  "pm2_5": { "measurement_type": 0x0D, "accuracy_decimals": 0, "unit_of_measurement": "ug/m3" },
-  "pm10": { "measurement_type": 0x0E, "accuracy_decimals": 0, "unit_of_measurement": "ug/m3" },
-  "co2": { "measurement_type": 0x12, "accuracy_decimals": 0, "unit_of_measurement": "ppm" },
-  "tvoc": { "measurement_type": 0x13, "accuracy_decimals": 0, "unit_of_measurement": "ug/m3" },
-  "moisture": { "measurement_type": 0x14, "accuracy_decimals": 2, "unit_of_measurement": "%" },
-  "humidity_coarse": { "measurement_type": 0x2E, "accuracy_decimals": 0, "unit_of_measurement": "%" },
-  "moisture_coarse": { "measurement_type": 0x2F, "accuracy_decimals": 0, "unit_of_measurement": "%" },
-  "count_2": { "measurement_type": 0x3D, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "count_4": { "measurement_type": 0x3E, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "rotation": { "measurement_type": 0x3F, "accuracy_decimals": 1, "unit_of_measurement": "°" },
-  "distance_mm": { "measurement_type": 0x40, "accuracy_decimals": 0, "unit_of_measurement": "mm" },
-  "distance_m": { "measurement_type": 0x41, "accuracy_decimals": 1, "unit_of_measurement": "m" },
-  "duration": { "measurement_type": 0x42, "accuracy_decimals": 3, "unit_of_measurement": "s" },
-  "current": { "measurement_type": 0x43, "accuracy_decimals": 3, "unit_of_measurement": "A" },
-  "speed": { "measurement_type": 0x44, "accuracy_decimals": 2, "unit_of_measurement": "m/s" },
-  "temperature_coarse": { "measurement_type": 0x45, "accuracy_decimals": 1, "unit_of_measurement": "°C" },
-  "UV_index": { "measurement_type": 0x46, "accuracy_decimals": 1, "unit_of_measurement": "" },
-  "volume": { "measurement_type": 0x47, "accuracy_decimals": 1, "unit_of_measurement": "L" },
-  "volume_mL": { "measurement_type": 0x48, "accuracy_decimals": 0, "unit_of_measurement": "mL" },
-  "volume_Flow_Rate": { "measurement_type": 0x49, "accuracy_decimals": 3, "unit_of_measurement": "m3/hr" },
-  "voltage_coarse": { "measurement_type": 0x4A, "accuracy_decimals": 1, "unit_of_measurement": "V" },
-  "gas": { "measurement_type": 0x4B, "accuracy_decimals": 3, "unit_of_measurement": "m3" },
-  "gas_4": { "measurement_type": 0x4C, "accuracy_decimals": 3, "unit_of_measurement": "m3" },
-  "energy_4": { "measurement_type": 0x4D, "accuracy_decimals": 3, "unit_of_measurement": "kWh" },
-  "volume_precise": { "measurement_type": 0x4E, "accuracy_decimals": 3, "unit_of_measurement": "L" },
-  "water": { "measurement_type": 0x4F, "accuracy_decimals": 3, "unit_of_measurement": "L" },
-  "timestamp": { "measurement_type": 0x50, "accuracy_decimals": 0, "unit_of_measurement": "" },
-  "acceleration": { "measurement_type": 0x51, "accuracy_decimals": 3, "unit_of_measurement": "m/s²" },
-  "gyroscope": { "measurement_type": 0x52, "accuracy_decimals": 3, "unit_of_measurement": "°/s" },
+    "packet_id": {
+        "measurement_type": 0x00,
+        "accuracy_decimals": 0
+    },
+    "battery": {
+        "measurement_type": 0x01,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "%",
+        "device_class": "battery"
+    },
+    "temperature": {
+        "measurement_type": 0x02,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "°C",
+        "device_class": "temperature"
+    },
+    "humidity": {
+        "measurement_type": 0x03,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "%",
+        "device_class": "humidity"
+    },
+    "pressure": {
+        "measurement_type": 0x04,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "hPa",
+        "device_class": "pressure"
+    },
+    "illuminance": {
+        "measurement_type": 0x05,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "lux",
+        "device_class": "illuminance"
+    },
+    "mass_kg": {
+        "measurement_type": 0x06,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "kg",
+        "device_class": "weight"
+    },
+    "mass_lb": {
+        "measurement_type": 0x07,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "lb",
+        "device_class": "weight"
+    },
+    "dewpoint": {
+        "measurement_type": 0x08,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "°C",
+        "device_class": "moisture"
+    },
+    "count": {
+        "measurement_type": 0x09,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": ""
+    },
+    "energy": {
+        "measurement_type": 0x0a,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "kWh",
+        "device_class": "energy"
+    },
+    "power": {
+        "measurement_type": 0x0b,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "W",
+        "device_class": "power"
+    },
+    "voltage": {
+        "measurement_type": 0x0c,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "V",
+        "device_class": "voltage"
+    },
+    "pm2_5": {
+        "measurement_type": 0x0d,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "ug/m3",
+        "device_class": "pm25"
+    },
+    "pm10": {
+        "measurement_type": 0x0e,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "ug/m3",
+        "device_class": "pm1"
+    },
+    "co2": {
+        "measurement_type": 0x12,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "ppm"
+    },
+    "tvoc": {
+        "measurement_type": 0x13,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "ug/m3",
+        "device_class": "volatile_organic_compounds"
+    },
+    "moisture": {
+        "measurement_type": 0x14,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "%",
+        "device_class": "moisture"
+    },
+    "humidity_coarse": {
+        "measurement_type": 0x2e,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "%",
+        "device_class": "humidity"
+    },
+    "moisture_coarse": {
+        "measurement_type": 0x2f,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "%",
+        "device_class": "moisture"
+    },
+    "count_2": {
+        "measurement_type": 0x3d,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": ""
+    },
+    "count_4": {
+        "measurement_type": 0x3e,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": ""
+    },
+    "rotation": {
+        "measurement_type": 0x3f,
+        "accuracy_decimals": 1,
+        "unit_of_measurement": "°"
+    },
+    "distance_mm": {
+        "measurement_type": 0x40,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "mm",
+        "device_class": "distance"
+    },
+    "distance_m": {
+        "measurement_type": 0x41,
+        "accuracy_decimals": 1,
+        "unit_of_measurement": "m",
+        "device_class": "distance"
+    },
+    "duration": {
+        "measurement_type": 0x42,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "s",
+        "device_class": "duration"
+    },
+    "current": {
+        "measurement_type": 0x43,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "A",
+        "device_class": "current"
+    },
+    "speed": {
+        "measurement_type": 0x44,
+        "accuracy_decimals": 2,
+        "unit_of_measurement": "m/s",
+        "device_class": "speed"
+    },
+    "temperature_coarse": {
+        "measurement_type": 0x45,
+        "accuracy_decimals": 1,
+        "unit_of_measurement": "°C",
+        "device_class": "temperature"
+    },
+    "UV_index": {
+        "measurement_type": 0x46,
+        "accuracy_decimals": 1,
+        "unit_of_measurement": ""
+    },
+    "volume": {
+        "measurement_type": 0x47,
+        "accuracy_decimals": 1,
+        "unit_of_measurement": "L",
+        "device_class": "volume"
+    },
+    "volume_mL": {
+        "measurement_type": 0x48,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "mL",
+        "device_class": "volume"
+    },
+    "volume_Flow_Rate": {
+        "measurement_type": 0x49,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "m3/hr",
+        "device_class": "volume"
+    },
+    "voltage_coarse": {
+        "measurement_type": 0x4a,
+        "accuracy_decimals": 1,
+        "unit_of_measurement": "V",
+        "device_class": "voltage"
+    },
+    "gas": {
+        "measurement_type": 0x4b,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "m3",
+        "device_class": "gas"
+    },
+    "gas_4": {
+        "measurement_type": 0x4c,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "m3",
+        "device_class": "gas"
+    },
+    "energy_4": {
+        "measurement_type": 0x4d,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "kWh",
+        "device_class": "energy"
+    },
+    "volume_precise": {
+        "measurement_type": 0x4e,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "L",
+        "device_class": "volume"
+    },
+    "water": {
+        "measurement_type": 0x4f,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "L",
+        "device_class": "water"
+    },
+    "timestamp": {
+        "measurement_type": 0x50,
+        "accuracy_decimals": 0,
+        "unit_of_measurement": "",
+        "device_class": "timestamp"
+    },
+    "acceleration": {
+        "measurement_type": 0x51,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "m/s²"
+    },
+    "gyroscope": {
+        "measurement_type": 0x52,
+        "accuracy_decimals": 3,
+        "unit_of_measurement": "°/s"
+    }
 }

@@ -10,11 +10,7 @@ import esphome.config_validation as cv
 from esphome.config_validation import hex_int_range, has_at_least_one_key
 from esphome import automation
 from esphome.components import binary_sensor, sensor
-from esphome.const import (
-    CONF_ID,
-    CONF_NAME,
-    CONF_MAC_ADDRESS,
-)
+from esphome.const import CONF_ID, CONF_NAME, CONF_MAC_ADDRESS, CONF_STATE_CLASS
 from esphome.core import CORE, HexInt, coroutine_with_priority
 from esphome.components.bthome_base.const import (
     MEASUREMENT_TYPES_NUMERIC_SENSOR,
@@ -189,9 +185,9 @@ class Generator:
             else MEASUREMENT_TYPES_NUMERIC_SENSOR
         )
         schema_base = (
-            binary_sensor.BINARY_SENSOR_SCHEMA
+            binary_sensor.binary_sensor_schema()
             if is_binary_sensor
-            else sensor.SENSOR_SCHEMA
+            else sensor.sensor_schema()
         )
         register_sensor_async_fn = (
             binary_sensor.register_binary_sensor
@@ -286,6 +282,15 @@ class Generator:
                         cg.add(
                             var_item.set_device_class(
                                 measurement_type_record["device_class"]
+                            )
+                        )
+                    if (
+                        measurement_type_record.get("icon")
+                        and not "device_class" in config
+                    ):
+                        cg.add(
+                            var_item.set_icon(
+                                measurement_type_record["icon"]
                             )
                         )
                 else:
