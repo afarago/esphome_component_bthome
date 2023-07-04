@@ -111,7 +111,7 @@ namespace esphome
       // ESP_LOGD(TAG, "connect_to_wifi channel {channel}, persistent {persistent}")
       WiFi.disconnect();
       beethowen_base::setupwifi(channel, persistent);
-      beethowen_base::begin();
+      beethowen_base::begin(false);
     }
 
     bool BeethowenTransmitterHub::send(bool do_complete_send)
@@ -125,11 +125,16 @@ namespace esphome
       {
         // ESP_LOGD(TAG, ".send {measurement_type} %d, {has_sensor_state} %d", btsensor_struct.measurement_type, has_sensor_state(btsensor_struct));
         if (has_sensor_state(btsensor_struct))
-          encoder.addMeasurementValue(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
+        {
+          if (is_sensor_binary(btsensor_struct))
+            encoder.addMeasurementState(btsensor_struct.measurement_type, get_sensor_binarystate(btsensor_struct).value());
+          else
+            encoder.addMeasurementValue(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
+        }
         else
+        {
           has_outstanding_measurements = true;
-
-        // TODO: addMeasurement_state for binary
+        }
       }
       if (do_complete_send && has_outstanding_measurements)
         return false;
@@ -137,7 +142,7 @@ namespace esphome
       // TODO: after an outgoing send invalidate somehow -- cache all data and wait for another cycle, or wait at least 1 sec // or what
       // ESP_LOGD(TAG, "send {do_complete_send} %d, {has_outstanding_measurements} %d", do_complete_send, has_outstanding_measurements);
 
-      // perform send
+      // perform send only if there is anything to send
       bool success = false;
       if (encoder.get_count() > 0)
       {

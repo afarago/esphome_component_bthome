@@ -25,7 +25,7 @@ namespace bthome_base
     BTProtoVersion_BTHomeV2 = 2,
   } BTProtoVersion_e;
 
-  using measurement_cb_fn_t = std::function<void(uint8_t measurement_type, float value)>;
+  using measurement_cb_fn_t = std::function<void(bthome_measurement_t measurement_type, float value)>;
   using log_cb_fn_t = std::function<void(const char *message)>;
 
   bool parse_payload_bthome(const uint8_t *payload_data, uint32_t payload_length, BTProtoVersion_e proto,

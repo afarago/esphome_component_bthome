@@ -19,28 +19,29 @@ namespace esphome
   {
     static const char *const TAG = "bthome_receiver_base";
 
-    BTHomeReceiverBaseDevice *BTHomeReceiverBaseHub::add_sensor(BTHomeReceiverBaseDevice *btdevice, uint64_t address, BTHomeReceiverBaseBaseSensor *sensor)
+    BTHomeReceiverBaseDevice *BTHomeReceiverBaseHub::add_device(mac_address_t address)
+    {
+      auto btdevice = this->create_device(address);
+      my_devices.emplace(address, btdevice);
+
+      return btdevice;
+    }
+
+    BTHomeReceiverBaseDevice *BTHomeReceiverBaseHub::add_sensor(BTHomeReceiverBaseDevice *btdevice, mac_address_t address, BTHomeReceiverBaseBaseSensor *sensor)
     {
       if (!btdevice)
-      {
         btdevice = get_device_by_address(address);
-      }
-
       if (!btdevice)
-      {
-        btdevice = new BTHomeReceiverBaseDevice();
-        btdevice->set_address(address);
-        register_device(address, btdevice);
-      }
+        btdevice = add_device(address);
 
       // register new btsensor for the btdevice
       btdevice->register_sensor(sensor);
       return btdevice;
     }
 
-    void BTHomeReceiverBaseHub::report_measurement_(uint8_t measurement_type, float value, uint64_t address, BTHomeReceiverBaseDevice *btdevice, bool &device_header_reported)
+    void BTHomeReceiverBaseHub::report_measurement_(bthome_measurement_record_t measurement, mac_address_t address, BTHomeReceiverBaseDevice *btdevice, bool &device_header_reported)
     {
-      bool matched = btdevice ? btdevice->report_measurement_(measurement_type, value) : false;
+      bool matched = btdevice ? btdevice->report_measurement_(measurement) : false;
 
 #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
       // show in debug log any unmatched packages based on the dump_options
@@ -55,12 +56,12 @@ namespace esphome
           device_header_reported = true;
         }
 
-        ESP_LOGD(TAG, " - measure_type: 0x%02x = value: %0.3f", measurement_type, value);
+        ESP_LOGD(TAG, " - measure_type: 0x%02x = value: %0.3f", measurement.id, measurement.value);
       }
 #endif // ESPHOME_LOG_HAS_DEBUG
     }
 
-    void BTHomeReceiverBaseHub::parse_message_bthome_(const uint64_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
+    void BTHomeReceiverBaseHub::parse_message_bthome_(const mac_address_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
     {
       // TODO: should do a loop here instead of finding the right device and stopping
       //  for (auto btdevice_i : this->my_devices)
@@ -83,17 +84,25 @@ namespace esphome
 #endif // ESPHOME_LOG_LEVEL_DEBUG
 
       // parse the payload and report measurements in the callback, will be fixing this to V2
-      bool device_header_reported = false;
+      vector<bthome_measurement_record_t> measurements;
       bthome_base::parse_payload_bthome(
           payload_data, payload_length, proto,
           [&](uint8_t measurement_type, float value)
           {
-            this->report_measurement_(measurement_type, value, address, btdevice, device_header_reported);
+            measurements.push_back({measurement_type, value});
           },
           [&](const char *message)
           {
             ESP_LOGD(TAG, "%s", message);
           });
+
+      // report the measurements
+      bool device_header_reported = false;
+      for (auto item : measurements)
+        this->report_measurement_(item, address, btdevice, device_header_reported);
+
+      // trigger automation
+      this->on_packet_callback_.call(address, measurements);
     }
 
   }

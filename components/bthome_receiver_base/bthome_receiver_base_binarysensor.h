@@ -23,10 +23,9 @@ namespace esphome
                                            public BTHomeReceiverBaseBaseSensor
     {
 
-      void publish_data(float value) override
-      {
-        this->publish_state(value != 0.0); // TODO
-      };
+      void publish_data(float value) override{
+          this->publish_state(value != 0.0); // TODO
+      }
     };
   }
 }

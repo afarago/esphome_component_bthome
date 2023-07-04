@@ -12,7 +12,7 @@
 
 namespace bthome_base
 {
-    std::string addr64_to_str(uint64_t address)
+    std::string addr64_to_str(mac_address_t address)
     {
         char buffer[18];
         snprintf(buffer, sizeof(buffer), "%02x:%02x:%02x:%02x:%02x:%02x",
@@ -21,10 +21,10 @@ namespace bthome_base
         return buffer;
     }
 
-    uint64_t addr_to_uint64(const uint8_t *address)
+    mac_address_t addr_to_uint64(const uint8_t *address)
     {
         // uint64_t u = uint64_t(address[0] & 0xFF) << 40 | uint64_t(address[1] & 0xFF) << 32 | uint64_t(address[2] & 0xFF) << 24 | uint64_t(address[3] & 0xFF) << 16 | uint64_t(address[4] & 0xFF) << 8 | uint64_t(address[5] & 0xFF) << 0;
-        uint64_t u = uint64_t(address[0]) << 40 | uint64_t(address[1]) << 32 | uint64_t(address[2]) << 24 | uint64_t(address[3]) << 16 | uint64_t(address[4]) << 8 | uint64_t(address[5]) << 0;
+        mac_address_t u = uint64_t(address[0]) << 40 | uint64_t(address[1]) << 32 | uint64_t(address[2]) << 24 | uint64_t(address[3]) << 16 | uint64_t(address[4]) << 8 | uint64_t(address[5]) << 0;
         return u;
     }
 
@@ -45,14 +45,14 @@ namespace bthome_base
         10000 // 4 - not possible
     };
 
-    BTHomeDataFormat getDataFormat(uint8_t obj_meas_type)
+    BTHomeDataFormat getDataFormat(bthome_measurement_t obj_meas_type)
     {
         // check range
         if (obj_meas_type >= sizeof(MEAS_TYPES_FLAGS) / sizeof(uint8_t))
             return {};
 
         const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
-        uint8_t factor_raw = (meas_type_flags & 0b01100000) >> 5;
+        const uint8_t factor_raw = (meas_type_flags & 0b01100000) >> 5;
         BTHomeDataFormat retval = {
             .factor_raw = factor_raw,
             .factor_multiple = MEAS_TYPES_FACTORS_POSITIVE[factor_raw],

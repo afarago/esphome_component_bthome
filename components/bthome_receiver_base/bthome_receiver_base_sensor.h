@@ -27,7 +27,7 @@ namespace esphome
       void publish_data(float value) override
       {
         this->publish_state(value);
-      };
+      }
     };
 
   }

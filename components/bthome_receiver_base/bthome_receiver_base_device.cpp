@@ -4,6 +4,8 @@
  Author: Attila Farago
  */
 
+#include "esphome/components/bthome_base/bthome_base_common.h"
+
 #include "bthome_receiver_base_device.h"
 
 using namespace std;
@@ -21,16 +23,16 @@ namespace esphome
       ESP_LOGCONFIG(TAG, "dump_option %d", this->dump_option_);
     }
 
-    bool BTHomeReceiverBaseDevice::report_measurement_(uint8_t measurement_type, float value)
+    bool BTHomeReceiverBaseDevice::report_measurement_(bthome_measurement_record_t measurement)
     {
 
       // got a measurement --> look for matching sensors and publish data
       bool matched = false;
       for (auto btsensor : this->my_sensors)
       {
-        if (btsensor->match(measurement_type))
+        if (btsensor->match(measurement.id))
         {
-          btsensor->publish_data(value);
+          btsensor->publish_data(measurement.value);
           matched = true;
         }
       }

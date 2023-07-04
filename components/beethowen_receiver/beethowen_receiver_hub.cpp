@@ -18,19 +18,17 @@
 #include "beethowen_receiver_hub.h"
 #include "beethowen_receiver_device.h"
 
-using namespace std;
-
 namespace esphome
 {
   namespace beethowen_receiver
   {
-    static const char *const TAG = "beethowen_receiver";
+    static const char *const TAG = "beethowen_receiver";    
 
     void BeethowenReceiverHub::setup()
     {
       ESP_LOGCONFIG(TAG, "Setting up BeethowenReceiverHub...");
 
-      beethowen_base::begin(); // call it only once
+      beethowen_base::begin(true);
 
       // setup wifinow hooks
       beethowen_base::on_command([&](const uint8_t command, const uint8_t *buffer, const int size)

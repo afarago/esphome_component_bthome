@@ -10,9 +10,17 @@
 
 namespace bthome_base
 {
-    std::string addr64_to_str(uint64_t address);
+    typedef uint64_t mac_address_t;
+    typedef uint8_t bthome_measurement_t;
+    typedef struct
+    {
+      bthome_measurement_t id;
+      float value;
+    } bthome_measurement_record_t;
+
+    std::string addr64_to_str(mac_address_t address);
     std::string addr_to_str(const uint8_t *address);
-    uint64_t addr_to_uint64(const uint8_t *address);
+    mac_address_t addr_to_uint64(const uint8_t *address);
 
     typedef enum
     {
@@ -31,7 +39,7 @@ namespace bthome_base
         HaBleTypes_e data_format;
     } BTHomeDataFormat;
 
-    BTHomeDataFormat getDataFormat(uint8_t obj_meas_type);
+    BTHomeDataFormat getDataFormat(bthome_measurement_t obj_meas_type);
 
     // Sign extend trick
     // http://graphics.stanford.edu/~seander/bithacks.html#FixedSignExtend

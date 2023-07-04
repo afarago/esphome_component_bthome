@@ -21,11 +21,7 @@ namespace beethowen_base
 	// flags: 0x80 stands for BTHome V2 (bits 5-7) //0x40
 	const uint8_t BEETHOWEN_MAGIC_HEADER[BEETHOWEN_MAGIC_HEADER_LEN] = {0xD2, 0xFC};
 
-	struct esp_rc_event_t
-	{
-		esp_rc_command_callback_t callback_command;
-	} events[MAX_CALLBACKS];
-
+	esp_rc_command_callback_t events[MAX_CALLBACKS];
 	beethowen_data_packet_t buffer;
 	uint8_t broadcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 	uint8_t events_num = 0;
@@ -35,7 +31,7 @@ namespace beethowen_base
 	uint8_t *sender;
 	uint32_t sendTime;
 	uint16_t duration;
-	uint8_t *master = NULL; // TODO: ??
+	uint8_t *master = NULL;
 	bool sending;
 	bool sending_success;
 	bool esp_now_is_init = false;
@@ -127,7 +123,7 @@ namespace beethowen_base
 		if (events_num == MAX_CALLBACKS - 1)
 			return false;
 
-		events[events_num++] = (esp_rc_event_t){callback};
+		events[events_num++] = callback;
 		return true;
 	}
 
@@ -219,10 +215,8 @@ namespace beethowen_base
 			{
 				uint8_t command = data[BEETHOWEN_MAGIC_HEADER_LEN];
 				for (i = 0; i < events_num; i++)
-				{
-					if (events[i].callback_command)
-						events[i].callback_command(command, data, size);
-				}
+					if (events[i])
+						events[i](command, data, size);
 			}
 		}
 		else
@@ -237,7 +231,7 @@ namespace beethowen_base
 		esp_now_unregister_send_cb();
 	}
 
-	void begin()
+	void begin(bool use_broadcast)
 	{
 		if
 #if defined(USE_ESP32)
@@ -246,15 +240,12 @@ namespace beethowen_base
 			(esp_now_init() == OK)
 #endif
 		{
-			// uint32_t version;
-			// esp_now_get_version(&version);
-			// ESP_LOGD("custom", "{esp-now version}:%d", version);
-
 			esp_now_is_init = true;
 #if defined(USE_ESP8266)
 			esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
 #endif
-			addPeer(broadcast);
+			if (use_broadcast)
+				addPeer(broadcast);
 			esp_now_register_send_cb(sendHandler);
 			esp_now_register_recv_cb(recvHandler);
 		}

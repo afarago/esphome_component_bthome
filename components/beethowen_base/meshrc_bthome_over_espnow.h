@@ -49,7 +49,7 @@ namespace beethowen_base
     void wait();
     void delayMs(uint32_t time);
     void addPeer(uint8_t *addr);
-    void begin();
+    void begin(bool use_broadcast = true);
     void end();
 
 #define ESP_NOW_MAX_DATA_LEN 250

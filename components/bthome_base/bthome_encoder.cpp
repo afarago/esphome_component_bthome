@@ -35,7 +35,7 @@ namespace bthome_base
     this->m_count = 0;
   }
 
-  bool BTHomeEncoder::addMeasurement_state(uint8_t sensor_id, uint8_t state, uint8_t steps)
+  bool BTHomeEncoder::addMeasurementState(bthome_measurement_t sensor_id, uint8_t state, uint8_t steps)
   {
     // if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
     if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) > (measurement_max_len_))
@@ -61,7 +61,7 @@ namespace bthome_base
     return true;
   }
 
-  bool BTHomeEncoder::addMeasurementValueRaw(uint8_t sensor_id, uint64_t raw_value, uint8_t size)
+  bool BTHomeEncoder::addMeasurementValueRaw(bthome_measurement_t sensor_id, uint64_t raw_value, uint8_t size)
   {
     this->m_count++;
     this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
@@ -81,7 +81,7 @@ namespace bthome_base
     return true;
   }
 
-  bool BTHomeEncoder::addMeasurementValue(uint8_t sensor_id, uint64_t value)
+  bool BTHomeEncoder::addMeasurementValue(bthome_measurement_t sensor_id, uint64_t value)
   {
     BTHomeDataFormat dataformat = getDataFormat(sensor_id);
     uint8_t size = dataformat.len_in_bytes;
@@ -97,7 +97,7 @@ namespace bthome_base
     return addMeasurementValueRaw(sensor_id, value2, size);
   }
 
-  bool BTHomeEncoder::addMeasurementValue(uint8_t sensor_id, float value)
+  bool BTHomeEncoder::addMeasurementValue(bthome_measurement_t sensor_id, float value)
   {
     BTHomeDataFormat dataformat = getDataFormat(sensor_id);
     uint8_t size = dataformat.len_in_bytes;
@@ -138,7 +138,7 @@ namespace bthome_base
 
     struct DATA_BLOCK
     {
-      uint8_t object_id;
+      bthome_measurement_t object_id;
       uint8_t data[4];
       uint8_t data_len;
     };

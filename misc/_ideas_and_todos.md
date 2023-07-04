@@ -1,6 +1,5 @@
-####################################
+# IDEAs and TODOs
 
-IDEAS/TODOS:
 - add auto expiry somehow, sensor dows not support publishing "N/A" / has_value = false
 - add icons - as of now I do not understand how default icon by device_class is selected
 - add bthome BLE encryption
@@ -10,9 +9,12 @@ IDEAS/TODOS:
 - add ACK / return value - addedd value is not clear
 - remove 5* auto repeat // ESP-NOW layer does this automatically
 - auto find mechanism finetuning // e.g. if not found for first iteration just skip measurement and sleep for 10 iterations / thus have an unsuccess counter before reconnect attempt
+- transmitter: invalidate auto_send / per sensor
+- receiver: invalidate after x seconds 
+- separate receiver / handlere with a semaphored queue + external thread
 
 -----------
-ESP-NOW security
+# ESP-NOW security
 
 * one hub PMK - 16 bit private master key -- esp_now_set_pmk((uint8_t *)PMK_KEY_STR);
 * each device has LMK - If this key is not indicated, the action frame will not be encrypted
@@ -22,6 +24,7 @@ Note: The maximum number of peers which may be registered is 20 (espnow.MAX_TOTA
 ESPNow.del_peer(mac)
 // maybe can be set up to 17 -- CONFIG_ESP_WIFI_ESPNOW_MAX_ENCRYPT_NUM
 
+```
 beethowen_transmitter:
 	private_key: "PLEASE_CHANGE_ME" / 0x11223344556677889900AABBCCDDEEFF
 	remote_key: "DONT_BE_LAZY_OK?"
@@ -34,21 +37,22 @@ beethowen_receiver:
       name_prefix: Beethowen TestDevice
       remote_key: "PLEASE_CHANGE_ME"
       dump: unmatched
+```
 
 There is a flaw: one can mimic the MAC address and send an unencrypted message. how will I know this on the callback?
-https://github.com/espressif/esp-idf/issues/8577
-https://github.com/espressif/ESP8266_NONOS_SDK/issues/311
+- https://github.com/espressif/esp-idf/issues/8577
+- https://github.com/espressif/ESP8266_NONOS_SDK/issues/311
 - transmitter can safely remove broadcast peer / will not want to receive broadcast from anyone! / still can be fooled by a malicious MAC copy
 - server side?: no security
 
-flow: Transmitter/Receiver
---
+## Flow: Transmitter/Receiver
+
+### scenario 1
 * T: find_server[encrypted]
 * R: found_server[encrypted] / +channel
 * T: data[encrypted]
-A: success -> OK
-
-B: failed send
+  - A: success -> OK
+  - B: failed send
 Q:- does server receive a fuzzy message, but gets notified that MAC tries to reach it (chance to do del_peer for another and add_peer for this) -- if not, need a workaround
 * T: want_to_send_data/ping/shoutout[unencrypted]
 * R: pong[unencrypted] # + R: add_peer
@@ -56,7 +60,7 @@ Q:- does server receive a fuzzy message, but gets notified that MAC tries to rea
 A: success -> happy path
 B: failure -> ?? can server assued to be lost ??
 
---
+### scenario 2
 * T: find_server[encrypted] on ch1-11
 no success
 * T: find_server[unencrypted] on ch1-11
@@ -72,21 +76,21 @@ XXX // if we want secure comm scenario this is not acceptable
 
 
 -----------
-esp_now_add_peer
-ifidx: (ESP32 only) Index of the wifi interface which will be used to send data to this peer. Must be an integer set to network.STA_IF (=0) or network.AP_IF (=1). (default=0/network.STA_IF). See ESPNow and Wifi Operation below for more information.
+# esp_now_add_peer
+`ifidx`: (ESP32 only) Index of the wifi interface which will be used to send data to this peer. Must be an integer set to network.STA_IF (=0) or network.AP_IF (=1). (default=0/network.STA_IF). See ESPNow and Wifi Operation below for more information.
 
 -----------
-reduce power consumption at server
-esp_wifi_connectionless_module_set_wake_interval(100) // 100ms
-esp_now_set_wake_window(70) // 70ms -- 70% wake time
+# reduce power consumption at server
+* esp_wifi_connectionless_module_set_wake_interval(100) // 100ms
+* esp_now_set_wake_window(70) // 70ms -- 70% wake time
 
 
 -----------
-
-OTA_SWITCH:
+# OTA_SWITCH:
 /probably bad and irrelevant idea/
 
 - add OTA_SWITCH to communication channel
+  	```
 	ota::OTAComponent *ota_;
 	from esphome.components.ota import OTAComponent
 	this->get_ota()->set_safe_mode_pending(true);
@@ -99,7 +103,7 @@ OTA_SWITCH:
 
       // This seems to be needed to have ESPNow and WiFi working together
       proxy_base::ESPResultDecoder::check_esp_result_bool(WiFi.mode(WIFI_AP_STA), "WiFi.mode");
-- 
+
     void ProxyTransmitterComponent::proxy_setup()
     {
       // This runs before wifi component starts up...
@@ -121,9 +125,12 @@ OTA_SWITCH:
 
       proxy_base::ESPResultDecoder::check_esp_result_code(esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE), "WiFi.channel");
     }
+	```
+
 - OTA remote from URL?
 - OTA remote mode with AP?
 - transmitter_sensor:
+	```
 	proxy_id: ?
 	
 		beethowen_receiver:
@@ -152,11 +159,12 @@ OTA_SWITCH:
 				ssid: "$systemName"
 				password: !secret wifi_password
 			persistent: true
+	```
 
-####################################
+----------------------------------------------------------------
 
-COMMUNICATION:
---------------
+# COMMUNICATION:
+```
 client->bcast:	0xD2FC, 0x01, 0xABCD 				== find server with passkey 0xABCD
 server->client:	0xD2FC, 0x02, 0xABCD, 0x0B 			== server found or channel 11
 //server->client:	0xD2FC, 0xFF, 0xABCD, 0x22 			== error code 0x22 // e.g. unexpected client key
@@ -170,9 +178,11 @@ client->server:	0xD2FC, 0x16, 0xABCD, 0x40, <BTHomeData> == data packet
 //client->server:	0xD2FC, 0x00, 0xABCD, 0x00 [system_version], 0x01 [v1], 0x01 [system_name], 0x10 [len=16], "beethowen_remote" == response system_info
 
 //check: can I extend sensor.SENSOR_SCHEMA model with a field e.g. beethowen_measurement_type: temperature + modify def to_code? --? probably not
+```
 
+----------------------------------------------------------------
 
-####################################
+# Event handling
 
 decode:
 0x3A
@@ -191,14 +201,17 @@ script
 	id(my_beethowen_transmitter)->send_event(0x01, 0x03)
 
 
+```
 beethowen_receiver
 	devices:
 		- mac: aa:bb:cc:dd:ee:ff
 		  on_dimmer_event: (subtype, value)
 		  on_button_event: (subtype)
+```
 
 ??how is it repeated if not received properly??
 
+```
 typedef enum {
   BTHOME_BUTTON_EVENT_NONE = 0x00, 
   BTHOME_BUTTON_EVENT_PRESS = 0x01, 
@@ -210,3 +223,4 @@ typedef enum {
   BTHOME_BUTTON_EVENT_PRESS = 0x01, 
   BTHOME_BUTTON_EVENT_LONGPRESS = 0x02, 
 } BTHome_Button_Event_Types_e;
+```

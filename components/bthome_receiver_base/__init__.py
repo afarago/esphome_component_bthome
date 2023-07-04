@@ -4,13 +4,19 @@
  Author: Attila Farago
  """
 
-from esphome.cpp_generator import RawExpression
+from esphome.cpp_generator import RawExpression, Expression, SafeExpType, safe_exp
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.config_validation import hex_int_range, has_at_least_one_key
 from esphome import automation
 from esphome.components import binary_sensor, sensor
-from esphome.const import CONF_ID, CONF_NAME, CONF_MAC_ADDRESS, CONF_STATE_CLASS
+from esphome.const import (
+    CONF_ID,
+    CONF_NAME,
+    CONF_MAC_ADDRESS,
+    CONF_STATE_CLASS,
+    CONF_TRIGGER_ID,
+)
 from esphome.core import CORE, HexInt, coroutine_with_priority
 from esphome.components.bthome_base.const import (
     MEASUREMENT_TYPES_NUMERIC_SENSOR,
@@ -24,6 +30,7 @@ CONF_DUMP_PACKETS_OPTION = "dump_packets"
 CONF_DEVICES = "devices"
 CONF_SENSORS = "sensors"
 CONF_MEASUREMENT_TYPE = "measurement_type"
+CONF_ON_PACKET = "on_packet"
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = []
@@ -33,10 +40,15 @@ AUTO_LOAD = [
     "sensor",
 ]
 
+bthome_base_ns = cg.global_ns.namespace("bthome_base")
 bthome_receiver_base_ns = cg.esphome_ns.namespace("bthome_receiver_base")
 BTHomeReceiverBaseDevice = bthome_receiver_base_ns.class_(
     "BTHomeReceiverBaseDevice", cg.Component
 )
+PacketTrigger = bthome_receiver_base_ns.class_(
+    "PacketTrigger", automation.Trigger.template()
+)
+BTHomeMeasurementRecord = bthome_base_ns.struct("bthome_measurement_record_t")
 
 DumpOption = bthome_receiver_base_ns.enum("DumpOption")
 DUMP_OPTION = {
@@ -45,6 +57,17 @@ DUMP_OPTION = {
     "ALL": DumpOption.DumpOption_All,
 }
 
+class ExplicitClassPtrCast(Expression):
+    __slots__ = ("classop", "xhs")
+
+    def __init__(self, classop: SafeExpType, xhs: SafeExpType):
+        self.classop = safe_exp(classop).operator("ptr")
+        self.xhs = safe_exp(xhs)
+
+    def __str__(self):
+        # Surround with parentheses to ensure generated code has same
+        # order as python one
+        return f"({self.classop})({self.xhs})"
 
 class DeviceStorage:
     device_ = {}
@@ -104,27 +127,41 @@ class Generator:
                 cv.Optional(CONF_DEVICES): cv.ensure_list(
                     self.generate_component_device_schema()
                 ),
+                cv.Optional(CONF_ON_PACKET): automation.validate_automation(
+                    {
+                        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PacketTrigger),
+                    }
+                ),
             }
         ).extend(cv.COMPONENT_SCHEMA)
         return CONFIG_SCHEMA
 
     def to_code_device(self, parent, config, ID_PROP):
-        var = cg.new_Pvariable(config[ID_PROP])
-        cg.add(var.set_address(config[CONF_MAC_ADDRESS].as_hex))
-        name_prefix_str = None
+        # add to device registry
+        mac_address_str = str(config[CONF_MAC_ADDRESS])
+        if not mac_address_str in self.devices_by_addr_:
+            var = cg.Pvariable(
+                config[ID_PROP],
+                ExplicitClassPtrCast(
+                    self.device_class_factory(),
+                    parent.add_device(config[CONF_MAC_ADDRESS].as_hex),
+                ),
+            )
+
+            name_prefix_str = (
+                str(config[CONF_NAME_PREFIX]) if CONF_NAME_PREFIX in config else None
+            )
+            devs = DeviceStorage(var, mac_address_str, name_prefix_str)
+            self.devices_by_addr_[mac_address_str] = devs
+
+        else:
+            devs = self.devices_by_addr_[mac_address_str]
+            var = devs.device_
+
         if CONF_NAME_PREFIX in config:
             cg.add(var.set_name_prefix(config[CONF_NAME_PREFIX]))
-            name_prefix_str = str(config[CONF_NAME_PREFIX])
         if CONF_DUMP_OPTION in config:
             cg.add(var.set_dump_option(config[CONF_DUMP_OPTION]))
-
-        mac_address_str = str(config[CONF_MAC_ADDRESS])
-        if mac_address_str in self.devices_by_addr_:
-            raise cv.Invalid("Device already registered.")
-
-        devs = DeviceStorage(var, mac_address_str, name_prefix_str)
-        self.devices_by_addr_[mac_address_str] = devs
-        cg.add(parent.register_device(config[CONF_MAC_ADDRESS].as_hex, var))
 
         return devs
 
@@ -141,6 +178,23 @@ class Generator:
         if CONF_DEVICES in config:
             for i, config_item in enumerate(config[CONF_DEVICES]):
                 self.to_code_device(var, config_item, CONF_ID)
+
+        # automations
+        for conf in config.get(CONF_ON_PACKET, []):
+            trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+            await automation.build_automation(
+                trigger,
+                [
+                    (cg.uint64.operator("const"), "address"),
+                    (
+                        cg.std_vector.template(BTHomeMeasurementRecord).operator(
+                            "const"
+                        ),
+                        "measurements",
+                    ),
+                ],
+                conf,
+            )
 
         return var
 
@@ -229,13 +283,7 @@ class Generator:
             paren = await cg.get_variable(config[self.hubid_])
 
             mac_address = config[CONF_MAC_ADDRESS]
-            devs = None
-            if str(mac_address) in self.devices_by_addr_:
-                devs = self.devices_by_addr_[str(mac_address)]
-            else:
-                devs = self.to_code_device(
-                    paren, config, CONF_BTHomeReceiverBaseDevice_ID
-                )
+            devs = self.to_code_device(paren, config, CONF_BTHomeReceiverBaseDevice_ID)
 
             # iterate around the subsensors
             for i, config_item in enumerate(config[CONF_SENSORS]):
@@ -288,11 +336,7 @@ class Generator:
                         measurement_type_record.get("icon")
                         and not "device_class" in config
                     ):
-                        cg.add(
-                            var_item.set_icon(
-                                measurement_type_record["icon"]
-                            )
-                        )
+                        cg.add(var_item.set_icon(measurement_type_record["icon"]))
                 else:
                     cg.add(
                         var_item.set_measurement_type(

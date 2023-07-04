@@ -58,7 +58,7 @@ namespace esphome
     bool BTHomeBLEReceiverHub::parse_message_payload_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, bthome_base::BTProtoVersion_e proto)
     {
       // Check and match the device
-      const uint64_t address = device.address_uint64();
+      const mac_address_t address = device.address_uint64();
 
       // Parse the payload data
       const std::vector<uint8_t> &message = service_data.data;

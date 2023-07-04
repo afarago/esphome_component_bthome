@@ -12,7 +12,6 @@ namespace esphome
 {
   namespace bthome_receiver_base
   {
-
     typedef enum
     {
       DumpOption_None = 0,

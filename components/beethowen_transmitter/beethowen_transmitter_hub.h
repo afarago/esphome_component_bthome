@@ -14,11 +14,14 @@
 #include "esphome/core/automation.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
+#include "esphome/components/bthome_base/bthome_base_common.h"
 
 namespace esphome
 {
   namespace beethowen_transmitter
   {
+    using namespace bthome_base;
+
     class BeethowenTransmitterHub : public PollingComponent
     {
     public:
@@ -28,9 +31,9 @@ namespace esphome
       {
       }
 
-      inline uint64_t get_server_address() { return this->server_address_; };
+      inline mac_address_t get_server_address() { return this->server_address_; };
       inline uint8_t *get_server_address_arr() { return this->server_address_arr_; };
-      inline void set_server_address(uint64_t value)
+      inline void set_server_address(mac_address_t value)
       {
         server_address_ = value;
 
@@ -87,7 +90,7 @@ namespace esphome
       CallbackManager<void()> on_send_failed_callback_;
 
     private:
-      uint64_t server_address_{0};
+      mac_address_t server_address_{0};
       uint8_t server_address_arr_[6];
       uint8_t server_channel_{0};
       bool server_found_{false};
@@ -106,7 +109,12 @@ namespace esphome
         binary_sensor::BinarySensor *binary_sensor;
       } BTHomeTypedSensor;
 
-      bool has_sensor_state(BTHomeTypedSensor sensor_struct)
+      static bool is_sensor_binary(BTHomeTypedSensor sensor_struct)
+      {
+        return sensor_struct.binary_sensor != nullptr;
+      }
+
+      static bool has_sensor_state(BTHomeTypedSensor sensor_struct)
       {
         if (sensor_struct.sensor)
           return sensor_struct.sensor->has_state();
@@ -115,11 +123,20 @@ namespace esphome
         return false;
       }
 
-      optional<float> get_sensor_state(BTHomeTypedSensor sensor_struct)
+      static optional<float> get_sensor_state(BTHomeTypedSensor sensor_struct)
       {
-        if (sensor_struct.sensor && sensor_struct.sensor->has_state())
+        if (!has_sensor_state(sensor_struct))
+          return nullopt;
+        if (sensor_struct.sensor)
           return sensor_struct.sensor->get_state();
-        if (sensor_struct.binary_sensor->has_state())
+        if (sensor_struct.binary_sensor)
+          return sensor_struct.binary_sensor->state;
+        return nullopt;
+      }
+
+      static optional<bool> get_sensor_binarystate(BTHomeTypedSensor sensor_struct)
+      {
+        if (sensor_struct.binary_sensor && sensor_struct.binary_sensor->has_state())
           return sensor_struct.binary_sensor->state;
         return nullopt;
       }
