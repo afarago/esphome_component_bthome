@@ -19,7 +19,7 @@ Encryption support might be implemented later on.
     
     esp32_ble_tracker:
 
-    bthome_receiver:
+    bthome_ble_receiver:
       dump: unmatched
       devices:
         - mac_address: 11:22:33:44:55:55
@@ -28,7 +28,7 @@ Encryption support might be implemented later on.
           dump: all
 
     sensor:
-      - platform: bthome
+      - platform: bthome_ble_receiver
         mac_address: 11:22:33:44:55:55
         sensors:
           - measurement_type: temperature
@@ -40,14 +40,14 @@ Encryption support might be implemented later on.
             accuracy_decimals: 2
             unit_of_measurement: °C
 
-      - platform: bthome
+      - platform: bthome_ble_receiver
         mac_address: 22:33:44:55:55:66
         sensors:
           - measurement_type: temperature
             name: BTHome Garage Temperature
 
     binary_sensor:
-      - platform: bthome
+      - platform: bthome_ble_receiver
         mac_address: 11:22:33:44:55:55
         name_prefix: BTHome Garage
         sensors:
@@ -59,7 +59,7 @@ Encryption support might be implemented later on.
 Component/Hub
 -------------
 
-The ``bthome_receiver`` component creates a global hub so that you can track bluetooth low
+The ``bthome_ble_receiver`` component creates a global hub so that you can track bluetooth low
 energy devices using your ESP32 node over the BTHome protocol using both v1 and v2 protocols.
 
 The component depends on the ``esp32_ble_tracker`` component which needs to be added to the 
@@ -97,7 +97,7 @@ Configuration variables:
 Sensor and Binary Sensor as *virtual device*
 --------------------------------------------
 
-The ``bthome sensor`` allows you use a sensor to display received measurement from a remote 
+The bthome sensor allows you use a sensor to display received measurement from a remote 
 BTHome device.
 First, you need to define a :ref:`bthome hub component <bthome-component>`.
 
@@ -110,11 +110,11 @@ To initialize a sensor, first supply ``mac_address`` to identify the remote BTHo
 .. code-block:: yaml
 
     # Example configuration entry
-    bthome:
+    bthome_ble_receiver:
 
     # Individual sensors
     sensor:
-      - platform: bthome
+      - platform: bthome_ble_receiver
         mac_address: 11:22:33:44:55:55
         sensors:
           - measurement_type: temperature

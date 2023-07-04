@@ -27,10 +27,7 @@ This component implements local trasmitter and encoding hub.
     
     esphome:
       name: $systemName
-      libraries:
-        - ESP8266WiFi
       on_loop:
-      then:
         - component.update: my_bmp085
 
     beethowen_transmitter:

@@ -1,11 +1,90 @@
+####################################
 
--- Home Assistant parser integration
-with service to send data / proxy data to
-esp add beethowen "server" component option to proxy all incoming data to HA
+IDEAS/TODOS:
+- add auto expiry somehow, sensor dows not support publishing "N/A" / has_value = false
+- add icons - as of now I do not understand how default icon by device_class is selected
+- add bthome BLE encryption
+- add ESP-NOW security - though flow is not trivial yet
+- Home Assistant parser integration / esp add beethowen "server" component option to proxy all incoming data to HA / with service to send data / proxy data to - problem:ESP32
+- add event -- source: should I add an action to simply "add" an event? | destination is unclear, should I just create a trigger / or auto-proxy an event to Home Asistant
+- add ACK / return value - addedd value is not clear
+- remove 5* auto repeat // ESP-NOW layer does this automatically
+- auto find mechanism finetuning // e.g. if not found for first iteration just skip measurement and sleep for 10 iterations / thus have an unsuccess counter before reconnect attempt
+
+-----------
+ESP-NOW security
+
+* one hub PMK - 16 bit private master key -- esp_now_set_pmk((uint8_t *)PMK_KEY_STR);
+* each device has LMK - If this key is not indicated, the action frame will not be encrypted
+  esp_now_peer_info_t slaveInfo;  memcpy(slaveInfo.peer_addr, slaveAddress, 6);  slaveInfo.channel = 0;  for (uint8_t i = 0; i < 16; i++) {    slaveInfo.lmk[i] = LMK_KEY_STR[i];  }  slaveInfo.encrypt = true;  if (esp_now_add_peer(&slaveInfo) != ESP_OK) {}
+
+Note: The maximum number of peers which may be registered is 20 (espnow.MAX_TOTAL_PEER_NUM), with a maximum of 6 (espnow.MAX_ENCRYPT_PEER_NUM) of those peers with encryption enabled (see ESP_NOW_MAX_ENCRYPT_PEER_NUM in the Espressif API docs).
+ESPNow.del_peer(mac)
+// maybe can be set up to 17 -- CONFIG_ESP_WIFI_ESPNOW_MAX_ENCRYPT_NUM
+
+beethowen_transmitter:
+	private_key: "PLEASE_CHANGE_ME" / 0x11223344556677889900AABBCCDDEEFF
+	remote_key: "DONT_BE_LAZY_OK?"
+	connect_persistent: true
+
+beethowen_receiver:
+  private_key: "DONT_BE_LAZY_OK?"
+  devices:
+    - mac_address: 48:3f:da:0c:72:32
+      name_prefix: Beethowen TestDevice
+      remote_key: "PLEASE_CHANGE_ME"
+      dump: unmatched
+
+There is a flaw: one can mimic the MAC address and send an unencrypted message. how will I know this on the callback?
+https://github.com/espressif/esp-idf/issues/8577
+https://github.com/espressif/ESP8266_NONOS_SDK/issues/311
+- transmitter can safely remove broadcast peer / will not want to receive broadcast from anyone! / still can be fooled by a malicious MAC copy
+- server side?: no security
+
+flow: Transmitter/Receiver
+--
+* T: find_server[encrypted]
+* R: found_server[encrypted] / +channel
+* T: data[encrypted]
+A: success -> OK
+
+B: failed send
+Q:- does server receive a fuzzy message, but gets notified that MAC tries to reach it (chance to do del_peer for another and add_peer for this) -- if not, need a workaround
+* T: want_to_send_data/ping/shoutout[unencrypted]
+* R: pong[unencrypted] # + R: add_peer
+* T: data[encrypted] # retry
+A: success -> happy path
+B: failure -> ?? can server assued to be lost ??
+
+--
+* T: find_server[encrypted] on ch1-11
+no success
+* T: find_server[unencrypted] on ch1-11
+* R: found_server[unencrypted] on chX
+
+A: if: has key for server -> add_peer
+* T: find_server[encrypted] on chX
+* R: found_server[encrypted] on chX
+* T: data[encrypted] on chX
+
+B: else: doesnt have key for server
+XXX // if we want secure comm scenario this is not acceptable
+
+
+-----------
+esp_now_add_peer
+ifidx: (ESP32 only) Index of the wifi interface which will be used to send data to this peer. Must be an integer set to network.STA_IF (=0) or network.AP_IF (=1). (default=0/network.STA_IF). See ESPNow and Wifi Operation below for more information.
+
+-----------
+reduce power consumption at server
+esp_wifi_connectionless_module_set_wake_interval(100) // 100ms
+esp_now_set_wake_window(70) // 70ms -- 70% wake time
 
 
 -----------
 
+OTA_SWITCH:
+/probably bad and irrelevant idea/
 
 - add OTA_SWITCH to communication channel
 	ota::OTAComponent *ota_;
@@ -92,11 +171,6 @@ client->server:	0xD2FC, 0x16, 0xABCD, 0x40, <BTHomeData> == data packet
 
 //check: can I extend sensor.SENSOR_SCHEMA model with a field e.g. beethowen_measurement_type: temperature + modify def to_code? --? probably not
 
-
-####################################
-
-IDEAS:
-- add auto expiry somehow, sensor dows not support publishing "N/A" / has_value = false
 
 ####################################
 

@@ -6,22 +6,20 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
-
 #include "esphome/components/esp32_ble_tracker/esp32_ble_tracker.h"
-
-#include "esphome/components/bthome_receiver/bthome_receiver_hub.h"
-
 #include "esphome/components/bthome_base/bthome_parser.h"
+
+#include "bthome_ble_receiver_hub.h"
 
 #ifdef USE_ESP32
 
 namespace esphome
 {
-  namespace bthome_receiver
+  namespace bthome_ble_receiver
   {
-    static const char *const TAG = "bthome_receiver";
+    static const char *const TAG = "bthome_ble_receiver";
 
-    bool BTHomeReceiverHub::parse_device(const esp32_ble_tracker::ESPBTDevice &device)
+    bool BTHomeBLEReceiverHub::parse_device(const esp32_ble_tracker::ESPBTDevice &device)
     {
       bool success = false;
       for (auto &service_data : device.get_service_datas())
@@ -37,7 +35,7 @@ namespace esphome
       return false;
     }
 
-    bthome_base::BTProtoVersion_e BTHomeReceiverHub::parse_header_(const esp32_ble_tracker::ServiceData &service_data)
+    bthome_base::BTProtoVersion_e BTHomeBLEReceiverHub::parse_header_(const esp32_ble_tracker::ServiceData &service_data)
     {
       // 0000181c-0000-1000-8000-00805f9b34fb, 0000181e-0000-1000-8000-00805f9b34fb
       // esp32_ble_tracker::ESPBTUUID::from_uint16(0x181C)
@@ -57,7 +55,7 @@ namespace esphome
       // last_frame_count = raw[13];
     }
 
-    bool BTHomeReceiverHub::parse_message_payload_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, bthome_base::BTProtoVersion_e proto)
+    bool BTHomeBLEReceiverHub::parse_message_payload_(const esp32_ble_tracker::ServiceData &service_data, const esp32_ble_tracker::ESPBTDevice &device, bthome_base::BTProtoVersion_e proto)
     {
       // Check and match the device
       const uint64_t address = device.address_uint64();
@@ -103,7 +101,7 @@ namespace esphome
       // parse the payload and report measurements in the callback
       parse_message_bthome_(address, payload_data, payload_length, proto);
 
-      return true; //TODO change parse_message_bthome_ to return bool
+      return true; // TODO change parse_message_bthome_ to return bool
     }
   }
 }

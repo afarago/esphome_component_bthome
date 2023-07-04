@@ -26,6 +26,8 @@ namespace esphome
   namespace beethowen_transmitter
   {
     static const char *const TAG = "beethowen_transmitter";
+
+// Europe 1-13, US 1-11, Japan 1-14
 #define MAX_WIFI_CHANNELS 11
 
     void BeethowenTransmitterHub::setup()

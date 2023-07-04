@@ -14,11 +14,11 @@
 
 namespace esphome
 {
-  namespace bthome_receiver
+  namespace bthome_ble_receiver
   {
 #define MEASUREMENT_MAX_LEN_BTHOME_BLE 23 // 23=31(BLE_ADVERT_MAX_LEN)-3(FLAG)-1(SERVICE_DATA)-2(UUID)-1(ENCRYPT)-1(serviceData length bit)
-    class BTHomeReceiverHub : public esphome::bthome_receiver_base::BTHomeReceiverBaseHub,
-                              public esp32_ble_tracker::ESPBTDeviceListener
+    class BTHomeBLEReceiverHub : public esphome::bthome_receiver_base::BTHomeReceiverBaseHub,
+                                 public esp32_ble_tracker::ESPBTDeviceListener
     {
     public:
       bool parse_device(const esp32_ble_tracker::ESPBTDevice &device) override;

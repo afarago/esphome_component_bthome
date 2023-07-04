@@ -15,8 +15,6 @@ globals:
 
 esphome:
   name: $systemName
-  libraries:
-    - ESP8266WiFi
   on_boot:
     - lambda: |-
         if (id(my_server_data)) id(my_beethowen_transmitter)->set_server_data(id(my_server_data));

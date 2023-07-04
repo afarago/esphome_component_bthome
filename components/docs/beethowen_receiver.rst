@@ -157,11 +157,11 @@ To initialize a sensor, first supply ``mac_address`` to identify the remote Beet
 .. code-block:: yaml
 
     # Example configuration entry
-    beethowen:
+    beethowen_receiver:
 
     # Individual sensors
     sensor:
-      - platform: beethowen
+      - platform: beethowen_receiver
         mac_address: 11:22:33:44:55:55
         sensors:
           - measurement_type: temperature

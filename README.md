@@ -12,7 +12,7 @@ The installation procedure for external components is described [here](https://e
 
 ## External components provided by this repository
 
-- **[bthome_receiver](components/docs/bthome_receiver.rst)**
+- **[bthome_ble_receiver](components/docs/bthome_ble_receiver.rst)**
 
     This external component implements Bluetooth Low Energy BTHome local reception and decoding 
     without the need of a central hub.

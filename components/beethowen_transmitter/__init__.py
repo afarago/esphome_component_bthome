@@ -143,6 +143,13 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
 
+    if CORE.is_esp8266:
+        cg.add_library("ESP8266WiFi", None)
+    elif CORE.is_esp32 and CORE.using_arduino:
+        cg.add_library("WiFi", None)
+    else:
+        raise cv.Invalid("Beethowen is only supported on ESP cores.")
+
     if CONF_CONNECT_PERSISTENT in config:
         cg.add(var.set_connect_persistent(config[CONF_CONNECT_PERSISTENT]))
     if CONF_AUTO_SEND in config:
