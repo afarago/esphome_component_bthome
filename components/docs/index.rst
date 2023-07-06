@@ -5,6 +5,8 @@ This package implements ESPHome components to low-code support Bluetooth Low Ene
 standalone reception, and a leverage this protocol over ad-hoc routerless WiFi transmission over 
 ESP-NOW channel.
 
+Beethowen can be used both on ESP8266 and ESP32 devices.
+
 **BTHome**
   is an energy efficient but flexible BLE (Bluetooth Low Energy) format for devices to 
   broadcast their sensor data and  button presses. Devices can run over a year on a single battery.

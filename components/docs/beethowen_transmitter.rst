@@ -5,7 +5,7 @@ Beethowen Transmitter
 Wireless Communication Protocol by Espressif Systems between two devices.
 *The name came from a playful 2 am brainstorming from "BTHome" + "Over" + "Esp-NoW".*
 
-This component implements local trasmitter and encoding hub.
+This component implements local trasmitter and encoding hub that can be used both on ESP8266 and ESP32 devices.
 
 **ESP-NOW**
   is a wireless communication protocol defined by Espressif, which enables the direct, 
@@ -102,8 +102,8 @@ Automations
 - **on_finished_send** (*Optional*, Automation): An automation to perform when a transmission is finished.
 
 
-Authorization with a apremature security concept:
-*************************************************
+Authorization with a premature security concept:
+************************************************
 
 As ESP-NOW is a a highly insecure channel it is not recommended to use it for purposes above sensing and broacasting.
 Opposed to the BLE broadcast mechanism I have implemented a handshake in which remote client send directed data to preidentified servers.

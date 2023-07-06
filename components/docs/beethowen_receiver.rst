@@ -6,8 +6,7 @@ Beethowen Receiver
 Communication Protocol by Espressif Systems between two devices.
 *The name came from a playful 2 am brainstorming from "BTHome" + "Over" + "Esp-NoW".*
 
-This component implements Bluetooth Low Energy BTHome local reception and decoding 
-without the need of a central hub.
+This component implements local receiver and decoding hub that can be used both on ESP8266 and ESP32 devices.
 
 **ESP-NOW**
   is a wireless communication protocol defined by Espressif, which enables the direct, 
@@ -116,8 +115,8 @@ Configuration variables:
 
   - **expected_remote_passkey** (*Optional*, int, 16-bit): remote passkey that identifies or authorizes the incoming communication packet.
 
-Authorization with a apremature security concept:
-*************************************************
+Authorization with a premature security concept:
+************************************************
 
 As ESP-NOW is a a highly insecure channel it is not recommended to use it for purposes above sensing and broacasting.
 Opposed to the BLE broadcast mechanism I have implemented a handshake in which remote client send directed data to preidentified servers.
