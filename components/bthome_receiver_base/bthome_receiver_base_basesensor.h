@@ -24,7 +24,7 @@ namespace esphome
       bthome_measurement_t get_measurement_type() { return this->measurement_type_; };
       void set_measurement_type(uint8_t measurement_type) { measurement_type_ = measurement_type; };
 
-      bool match(const uint8_t measurement_type) { return this->measurement_type_ == measurement_type; }
+      int compare(const uint8_t measurement_type) { return (this->measurement_type_ > measurement_type) - (this->measurement_type_ < measurement_type); }
 
       virtual void publish_data(float value) = 0;
 

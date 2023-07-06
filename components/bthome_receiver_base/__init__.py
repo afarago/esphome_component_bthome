@@ -4,6 +4,7 @@
  Author: Attila Farago
  """
 
+import logging
 from esphome.cpp_generator import RawExpression, Expression, SafeExpType, safe_exp
 import esphome.codegen as cg
 import esphome.config_validation as cv
@@ -16,6 +17,10 @@ from esphome.const import (
     CONF_MAC_ADDRESS,
     CONF_STATE_CLASS,
     CONF_TRIGGER_ID,
+    CONF_ACCURACY_DECIMALS,
+    CONF_UNIT_OF_MEASUREMENT,
+    CONF_DEVICE_CLASS,
+    CONF_ICON,
 )
 from esphome.core import CORE, HexInt, coroutine_with_priority
 from esphome.components.bthome_base.const import (
@@ -57,6 +62,9 @@ DUMP_OPTION = {
     "ALL": DumpOption.DumpOption_All,
 }
 
+_LOGGER = logging.getLogger(__name__)
+
+
 class ExplicitClassPtrCast(Expression):
     __slots__ = ("classop", "xhs")
 
@@ -68,6 +76,7 @@ class ExplicitClassPtrCast(Expression):
         # Surround with parentheses to ensure generated code has same
         # order as python one
         return f"({self.classop})({self.xhs})"
+
 
 class DeviceStorage:
     device_ = {}
@@ -271,6 +280,14 @@ class Generator:
             value = _check_measurement_type(value)
             return value
 
+        def _get_measurement_type_value(confitem):
+            value2 = confitem[CONF_MEASUREMENT_TYPE]
+            if isinstance(value2, dict):
+                value2 = value2[CONF_MEASUREMENT_TYPE]
+            else:
+                value2 = int(value2)
+            return value2
+
         ReceiverSensor = bthome_receiver_base_ns.class_(
             cpp_classname, sensor_base, cg.Component
         )
@@ -285,8 +302,34 @@ class Generator:
             mac_address = config[CONF_MAC_ADDRESS]
             devs = self.to_code_device(paren, config, CONF_BTHomeReceiverBaseDevice_ID)
 
+            # check if sensors are in order, rearrange them if needed
+            config_sensors_arr = config[CONF_SENSORS]
+            if not all(
+                _get_measurement_type_value(config_sensors_arr[i])
+                <= _get_measurement_type_value(config_sensors_arr[i + 1])
+                for i in range(len(config_sensors_arr) - 1)
+            ):
+                _LOGGER.warning(
+                    "Warning: Receiver sensors array not in increasing order, rearranging automatically. Consder rearranging them in config manually."
+                )
+                # bubble sort sensors, stable sort, order on same ones are kept
+                swapped = True
+                for i in range(len(config_sensors_arr) - 1):
+                    # Last i elements are already in place
+                    for j in range(0, len(config_sensors_arr) - 1 - i):
+                        if _get_measurement_type_value(
+                            config_sensors_arr[j]
+                        ) > _get_measurement_type_value(config_sensors_arr[j + 1]):
+                            swapped = True
+                            config_sensors_arr[j], config_sensors_arr[j + 1] = (
+                                config_sensors_arr[j + 1],
+                                config_sensors_arr[j],
+                            )
+                    if not swapped:
+                        break
+
             # iterate around the subsensors
-            for i, config_item in enumerate(config[CONF_SENSORS]):
+            for i, config_item in enumerate(config_sensors_arr):
                 var_item = cg.new_Pvariable(config_item[CONF_ID])
 
                 if devs.name_prefix_:
@@ -302,41 +345,42 @@ class Generator:
 
                     cg.add(
                         var_item.set_measurement_type(
-                            HexInt(measurement_type_record["measurement_type"])
+                            HexInt(measurement_type_record[CONF_MEASUREMENT_TYPE])
                         )
                     )
+
                     if (
-                        measurement_type_record.get("accuracy_decimals")
-                        and not "accuracy_decimals" in config
+                        measurement_type_record.get(CONF_ACCURACY_DECIMALS)
+                        and not CONF_ACCURACY_DECIMALS in config_item
                     ):
                         cg.add(
                             var_item.set_accuracy_decimals(
-                                measurement_type_record["accuracy_decimals"]
+                                measurement_type_record[CONF_ACCURACY_DECIMALS]
                             )
                         )
                     if (
-                        measurement_type_record.get("unit_of_measurement")
-                        and not "unit_of_measurement" in config
+                        measurement_type_record.get(CONF_UNIT_OF_MEASUREMENT)
+                        and not CONF_UNIT_OF_MEASUREMENT in config_item
                     ):
                         cg.add(
                             var_item.set_unit_of_measurement(
-                                measurement_type_record["unit_of_measurement"]
+                                measurement_type_record[CONF_UNIT_OF_MEASUREMENT]
                             )
                         )
                     if (
-                        measurement_type_record.get("device_class")
-                        and not "device_class" in config
+                        measurement_type_record.get(CONF_DEVICE_CLASS)
+                        and not CONF_DEVICE_CLASS in config_item
                     ):
                         cg.add(
                             var_item.set_device_class(
-                                measurement_type_record["device_class"]
+                                measurement_type_record[CONF_DEVICE_CLASS]
                             )
                         )
                     if (
-                        measurement_type_record.get("icon")
-                        and not "device_class" in config
+                        measurement_type_record.get(CONF_ICON)
+                        and not CONF_ICON in config_item
                     ):
-                        cg.add(var_item.set_icon(measurement_type_record["icon"]))
+                        cg.add(var_item.set_icon(measurement_type_record[CONF_ICON]))
                 else:
                     cg.add(
                         var_item.set_measurement_type(

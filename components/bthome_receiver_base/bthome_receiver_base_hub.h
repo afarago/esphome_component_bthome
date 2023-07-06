@@ -27,6 +27,7 @@ namespace esphome
   {
     using namespace std;
     using namespace bthome_base;
+    using namespace bthome_receiver_base;
 
     class BTHomeReceiverBaseHub : public Component
     {
@@ -49,7 +50,7 @@ namespace esphome
       CallbackManager<void(const mac_address_t address, const vector<bthome_measurement_record_t> measurements)> on_packet_callback_;
 
       virtual void parse_message_bthome_(const mac_address_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto);
-      virtual void report_measurement_(bthome_measurement_record_t measurement, mac_address_t address, BTHomeReceiverBaseDevice *btdevice, bool &device_header_reported);
+      void report_measurements_(vector<bthome_measurement_record_t> measurements, mac_address_t address, BTHomeReceiverBaseDevice *btdevice);
       virtual BTHomeReceiverBaseDevice* create_device(const mac_address_t address) { return new BTHomeReceiverBaseDevice(address); }
 
       BTHomeReceiverBaseDevice *get_device_by_address(const mac_address_t address)

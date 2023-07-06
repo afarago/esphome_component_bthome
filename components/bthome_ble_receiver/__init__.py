@@ -33,10 +33,12 @@ class Generator(bthome_receiver_base.Generator):
             .extend(esp32_ble_tracker.ESP_BLE_DEVICE_SCHEMA)
         )
 
-    async def generate_to_code_body(self, config):
-        var = await super().generate_to_code_body(config)
+    async def to_code(self, config):
+        var = await super().to_code(config)
+        
+        # add esp32_ble_tracker->register_listener(hub)
         await esp32_ble_tracker.register_ble_device(var, config)
-
+        
         return var
 
 

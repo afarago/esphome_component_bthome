@@ -39,26 +39,36 @@ namespace esphome
       return btdevice;
     }
 
-    void BTHomeReceiverBaseHub::report_measurement_(bthome_measurement_record_t measurement, mac_address_t address, BTHomeReceiverBaseDevice *btdevice, bool &device_header_reported)
+    void BTHomeReceiverBaseHub::report_measurements_(vector<bthome_measurement_record_t> measurements, mac_address_t address, BTHomeReceiverBaseDevice *btdevice)
     {
-      bool matched = btdevice ? btdevice->report_measurement_(measurement) : false;
-
-#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
-      // show in debug log any unmatched packages based on the dump_options
-      if (
-          (this->get_dump_option() == DumpOption_All || (!matched && (this->get_dump_option() == DumpOption_Unmatched))) ||
-          (btdevice != NULL &&
-           (btdevice->get_dump_option() == DumpOption_All || (!matched && (btdevice->get_dump_option() == DumpOption_Unmatched)))))
+      bool device_header_reported = false;
+      measurement_log_handler_t measurement_log_handler = [&](const bthome_measurement_record_t measurement, const bool matched)
       {
-        if (!device_header_reported)
+#ifdef ESPHOME_LOG_HAS_DEBUG
+        if (
+            (this->get_dump_option() == DumpOption_All || (!matched && (this->get_dump_option() == DumpOption_Unmatched))) ||
+            (btdevice != NULL &&
+             (btdevice->get_dump_option() == DumpOption_All || (!matched && (btdevice->get_dump_option() == DumpOption_Unmatched)))))
         {
-          ESP_LOGD(TAG, "Data received from %s", bthome_base::addr64_to_str(address).c_str());
-          device_header_reported = true;
+          if (!device_header_reported)
+          {
+            ESP_LOGD(TAG, "Data received from %s %s",
+                     bthome_base::addr64_to_str(address).c_str(),
+                     btdevice ? btdevice->get_name_prefix().c_str() : "");
+            device_header_reported = true;
+          }
+          ESP_LOGD(TAG, " - measure_type: 0x%02x = value: %0.3f%s",
+                   measurement.id, measurement.value,
+                   matched ? "" : ", unmatched");
         }
-
-        ESP_LOGD(TAG, " - measure_type: 0x%02x = value: %0.3f", measurement.id, measurement.value);
-      }
 #endif // ESPHOME_LOG_HAS_DEBUG
+      };
+
+      if (btdevice)
+        btdevice->report_measurements_(measurements, measurement_log_handler);
+      else
+        for (auto item : measurements)
+          measurement_log_handler(item, false);
     }
 
     void BTHomeReceiverBaseHub::parse_message_bthome_(const mac_address_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
@@ -72,7 +82,7 @@ namespace esphome
       if (!btdevice && this->get_dump_option() == DumpOption_None)
         return;
 
-#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+#ifdef ESPHOME_LOG_HAS_DEBUG
       if (dump_packets_option_)
       {
         // log incoming packet
@@ -97,9 +107,7 @@ namespace esphome
           });
 
       // report the measurements
-      bool device_header_reported = false;
-      for (auto item : measurements)
-        this->report_measurement_(item, address, btdevice, device_header_reported);
+      this->report_measurements_(measurements, address, btdevice);
 
       // trigger automation
       this->on_packet_callback_.call(address, measurements);

@@ -33,7 +33,7 @@ namespace esphome
       void set_name_prefix(std::string value) { name_prefix_ = value; };
 
       void dump_config() override;
-      bool report_measurement_(bthome_measurement_record_t measurement);
+      void report_measurements_(vector<bthome_measurement_record_t> measurements, measurement_log_handler_t measurement_log_handler_cb);
       bool match(const mac_address_t mac_address) { return (this->address_ == mac_address); }
       void register_sensor(BTHomeReceiverBaseBaseSensor *sensor) { this->my_sensors.push_back(sensor); }
 

@@ -22,7 +22,7 @@ namespace esphome
 {
   namespace beethowen_receiver
   {
-    static const char *const TAG = "beethowen_receiver";    
+    static const char *const TAG = "beethowen_receiver";
 
     void BeethowenReceiverHub::setup()
     {
@@ -37,13 +37,16 @@ namespace esphome
 
     void BeethowenReceiverHub::beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size)
     {
-#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
-      ESP_LOGD(TAG, "Command received: 0x%02x, from: %s", command, bthome_base::addr_to_str(beethowen_base::sender).c_str());
-#endif // ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
-
       auto client_mac_a64 = bthome_base::addr_to_uint64(beethowen_base::sender);
       auto device = static_cast<BeethowenReceiverDevice *>(get_device_by_address(client_mac_a64));
       auto buffer1 = (beethowen_base::beethowen_command_header_t *)buffer;
+
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+      ESP_LOGD(TAG, "Command received: 0x%02x, from: %s, device: %s",
+               command,
+               bthome_base::addr_to_str(beethowen_base::sender).c_str(),
+               device ? device->get_name_prefix().c_str() : nullptr);
+#endif // ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
 
       // validate remote passkey
       if (device && device->get_remote_expected_passkey() != 0 && buffer1->passkey != device->get_remote_expected_passkey())

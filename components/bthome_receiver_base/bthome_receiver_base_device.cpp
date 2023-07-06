@@ -23,21 +23,44 @@ namespace esphome
       ESP_LOGCONFIG(TAG, "dump_option %d", this->dump_option_);
     }
 
-    bool BTHomeReceiverBaseDevice::report_measurement_(bthome_measurement_record_t measurement)
+    void BTHomeReceiverBaseDevice::report_measurements_(vector<bthome_measurement_record_t> measurements, measurement_log_handler_t measurement_log_handler_cb)
     {
-
       // got a measurement --> look for matching sensors and publish data
-      bool matched = false;
-      for (auto btsensor : this->my_sensors)
+      // assumption: both incoming data and sensors are in increasing order, same measurement_id's are ordered appropriately
+      // sensors are auto-arranged by esphome python
+
+      // step 1. arrange incoming measurements if not in right order
+      // if incoming data is unordered this will not match the sensors
+      auto measurement_type_compare = [](const bthome_measurement_record_t &a, const bthome_measurement_record_t &b)
+      { return a.id < b.id; };
+
+      if (std::is_sorted(measurements.begin(), measurements.end(), measurement_type_compare))
       {
-        if (btsensor->match(measurement.id))
-        {
-          btsensor->publish_data(measurement.value);
-          matched = true;
-        }
+        ESP_LOGD(TAG, "BTHome device is not sending object ids in numerical order (from low to high object id).");
+        std::stable_sort(measurements.begin(), measurements.end(), measurement_type_compare);
       }
 
-      return matched;
+      // step 2. iterate and match measurements with sensors
+      auto btsensor_iter = this->my_sensors.begin();
+      for (auto measurement : measurements)
+      {
+        bool matched = false;
+        while (btsensor_iter != this->my_sensors.end() && (*btsensor_iter)->compare(measurement.id) < 0)
+          btsensor_iter = std::next(btsensor_iter);
+
+        // check if sensor type is matches measurement type
+        if (btsensor_iter != this->my_sensors.end() && (*btsensor_iter)->compare(measurement.id) == 0)
+        {
+          auto btsensor = *btsensor_iter;
+          matched = true;
+          btsensor->publish_data(measurement.value);
+          btsensor_iter = std::next(btsensor_iter);
+        }
+
+        // report
+        if (measurement_log_handler_cb)
+          measurement_log_handler_cb(measurement, matched);
+      }
     }
 
   }
