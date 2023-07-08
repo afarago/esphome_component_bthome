@@ -42,12 +42,16 @@ namespace esphome
     {
     public:
       explicit SendAction(BeethowenTransmitterHub *hub) : hub_(hub) {}
-      TEMPLATABLE_VALUE(bool, complete_send)
 
-      void play(Ts... x) override { this->hub_->send(this->complete_send_.value(x...)); }
+      void play(Ts... x) override { this->hub_->send(this->complete_only_); }
+
+      void set_complete_only(bool value) { this->complete_only_ = value; }
 
     protected:
       BeethowenTransmitterHub *hub_;
+
+    private:
+      bool complete_only_{true};
     };
 
   }

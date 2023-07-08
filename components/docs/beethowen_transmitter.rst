@@ -93,14 +93,17 @@ Configuration variables:
 
 - **auto_send** (*Optional*, boolean): Regularly check all connected sensors and once all provide a valid state automatically send data.
 
-- **local_passkey** (*Optional*, int, 16-bit): local passkey that serves as an identification or authorization of the node.
+- **local_passkey** (*Optional*, int, 16-bit): Local passkey that serves as an identification or authorization of the node.
 
-- **expected_remote_passkey** (*Optional*, int, 16-bit): remote passkey that identifies or authorizes the incoming communication packet.
+- **expected_remote_passkey** (*Optional*, int, 16-bit): Remote passkey that identifies or authorizes the incoming communication packet.
+
+- **restore_from_flash** (*Optional*, boolean): Whether to store teh server data and channel as persistent preferences in flash memory. Defaults to true.
 
 Automations
 ***********
 - **on_send_finished** (*Optional*, Automation): An automation to perform when a transmission is finished.
 
+- **on_send_failed** (*Optional*, Automation): An automation to perform when a transmission is failed.
 
 Authorization with a premature security concept:
 ************************************************
@@ -161,8 +164,11 @@ on_send_finished
 ~~~~~~~~~~~~~~~~
 This automation will be triggered when a transmission is finished though the beethowen channel.
 In Lambdas you can get the result and check if there are any outstanding measurements not yet transferred 
-with *success*, *has_outstanding_measurements*.
+with *has_outstanding_measurements*.
 
+on_send_failed
+~~~~~~~~~~~~~~~~
+This automation will be triggered when a transmission is failed though the beethowen channel.
 
 Actions
 -------

@@ -36,6 +36,10 @@ namespace esphome
       beethowen_base::on_command([&](const uint8_t command, const uint8_t *buffer, const int size)
                                  { beethowen_on_command_(command, buffer, size); });
 
+      // Load the state from storage
+      if (this->restore_from_flash_)
+        this->restore_state_();
+
       ESP_LOGD(TAG, "Started searching for Beethowen receiving server...");
     }
 
@@ -58,7 +62,10 @@ namespace esphome
         server_channel_ = buffer2->server_channel;
         set_server_address(bthome_base::addr_to_uint64(beethowen_base::sender));
         server_found_ = true;
-        this->init_server_after_set();
+        // this->reinit_server_after_set();
+
+        if (this->restore_from_flash_)
+          this->save_state_(this->get_server_data());
         // ESP_LOGI(TAG, "Found server at {address} %s on {channel} %d with {passkey} %04X", bthome_base::addr64_to_str(server_address_).c_str(), buffer2->server_channel);
       }
       else
@@ -99,10 +106,10 @@ namespace esphome
       }
     }
 
-    void BeethowenTransmitterHub::init_server_after_set()
+    void BeethowenTransmitterHub::reinit_server_after_set()
     {
       connect_to_wifi(this->server_channel_, this->connect_persistent_);
-      ESP_LOGI(TAG, "Set server to {address} %s on {channel} %d",
+      ESP_LOGI(TAG, "Connecting server to {address} %s on {channel} %d",
                bthome_base::addr64_to_str(this->server_address_).c_str(), this->server_channel_);
     }
 
@@ -114,7 +121,7 @@ namespace esphome
       beethowen_base::begin(false);
     }
 
-    bool BeethowenTransmitterHub::send(bool do_complete_send)
+    bool BeethowenTransmitterHub::send(bool complete_only)
     {
       bthome_base::BTHomeEncoder encoder(MAX_BEETHOWEN_PAYLOAD_LENGTH);
       encoder.resetMeasurement();
@@ -136,7 +143,7 @@ namespace esphome
           has_outstanding_measurements = true;
         }
       }
-      if (do_complete_send && has_outstanding_measurements)
+      if (complete_only && has_outstanding_measurements)
         return false;
 
       // TODO: after an outgoing send invalidate somehow -- cache all data and wait for another cycle, or wait at least 1 sec // or what
@@ -174,6 +181,28 @@ namespace esphome
 
       this->last_send_millis_ = millis();
       return success;
+    }
+
+    void BeethowenTransmitterHub::restore_state_()
+    {
+      server_address_and_channel_t recovered{};
+#define GLOBAL_BEETHOWEN_PREFS_ID 127671119UL
+      this->prefs_state_ = global_preferences->make_preference<server_address_and_channel_t>(GLOBAL_BEETHOWEN_PREFS_ID, true); // save it to flash
+      bool restored = this->prefs_state_.load(&recovered);
+      if (restored)
+      {
+        this->set_server_data(recovered);
+      }
+    }
+
+    void BeethowenTransmitterHub::save_state_(server_address_and_channel_t server_address_and_channel)
+    {
+      ESP_LOGV(TAG, "%s: Saving state", this->device_id_.c_str());
+      if (!this->prefs_state_.save(&server_address_and_channel))
+      {
+        ESP_LOGW(TAG, "Failed to save state");
+        return;
+      }
     }
   }
 }

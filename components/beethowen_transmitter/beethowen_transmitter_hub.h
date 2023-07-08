@@ -12,6 +12,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/core/automation.h"
+#include "esphome/core/preferences.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/bthome_base/bthome_base_common.h"
@@ -21,6 +22,8 @@ namespace esphome
   namespace beethowen_transmitter
   {
     using namespace bthome_base;
+
+    typedef uint64_t server_address_and_channel_t;
 
     class BeethowenTransmitterHub : public PollingComponent
     {
@@ -46,19 +49,20 @@ namespace esphome
       };
       inline uint8_t get_server_channel() { return server_channel_; };
       inline void set_server_channel(uint8_t value) { server_channel_ = value; };
-      inline uint64_t get_server_data() { return uint64_t(server_channel_ & 0xFF) << 48 | server_address_; };
-      inline void set_server_data(uint64_t value)
+      inline server_address_and_channel_t get_server_data() { return mac_address_t(server_channel_ & 0xFF) << 48 | server_address_; };
+      inline void set_server_data(server_address_and_channel_t value)
       {
         server_channel_ = (uint8_t)(value >> 48) & 0xff;
         set_server_address(value & 0xffffffffffffLL);
         this->server_found_ = true;
-        this->init_server_after_set();
+        this->reinit_server_after_set();
       };
 
       inline void set_connect_persistent(bool value) { connect_persistent_ = value; };
       inline void set_auto_send(bool value) { auto_send_ = value; };
       inline void set_local_passkey(uint16_t value) { local_passkey_ = value; };
       inline void set_remote_expected_passkey(uint16_t value) { remote_expected_passkey_ = value; };
+      inline void set_restore_from_flash(bool value) { restore_from_flash_ = value; }
 
       void setup() override;
       void update() override;
@@ -69,7 +73,7 @@ namespace esphome
       void add_sensor(uint8_t measurement_type, sensor::Sensor *sensor) { my_sensors.push_back({measurement_type, sensor, nullptr}); }
       void add_sensor(uint8_t measurement_type, binary_sensor::BinarySensor *binary_sensor) { my_sensors.push_back({measurement_type, nullptr, binary_sensor}); }
 
-      bool send(bool do_complete_send);
+      bool send(bool complete_only = false);
 
       void add_on_send_finished_callback(std::function<void(bool)> callback)
       {
@@ -84,7 +88,10 @@ namespace esphome
       void beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size);
       bool is_server_found() { return this->server_found_; }
       void connect_to_wifi(uint8_t channel, bool persistent);
-      void init_server_after_set();
+      void reinit_server_after_set();
+
+      void restore_state_();
+      void save_state_(server_address_and_channel_t server_address_and_channel);
 
       CallbackManager<void(bool)> on_send_finished_callback_;
       CallbackManager<void()> on_send_failed_callback_;
@@ -97,9 +104,11 @@ namespace esphome
       bool initial_server_checkin_completed_{false};
       bool connect_persistent_{false};
       bool auto_send_{false};
+      bool restore_from_flash_{true};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
 
+      ESPPreferenceObject prefs_state_;
       uint32_t last_send_millis_{0};
 
       typedef struct

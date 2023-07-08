@@ -29,11 +29,12 @@ CONF_EXPECTED_REMOTE_PASSKEY = "expected_remote_passkey"
 CONF_SENSOR_SENSOR_ID = "sensor_id"
 CONF_ON_SEND_FINISHED = "on_send_finished"
 CONF_ON_SEND_FAILED = "on_send_failed"
-CONF_COMPLETE_SEND = "complete_send"
+CONF_RESTORE_FROM_FLASH = "restore_from_flash"
+CONF_COMPLETE_ONLY = "complete_only"  # for send action
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = []
-AUTO_LOAD = ["bthome_base", "beethowen_base", "binary_sensor", "sensor"]
+AUTO_LOAD = ["bthome_base", "beethowen_base", "binary_sensor", "sensor", "preferences"]
 
 beethowen_transmitter_ns = cg.esphome_ns.namespace("beethowen_transmitter")
 BeethowenTransmitterHub = beethowen_transmitter_ns.class_(
@@ -90,6 +91,7 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(): cv.declare_id(BeethowenTransmitterHub),
             cv.Optional(CONF_CONNECT_PERSISTENT): cv.boolean,
             cv.Optional(CONF_AUTO_SEND): cv.boolean,
+            cv.Optional(CONF_RESTORE_FROM_FLASH, default=True): cv.boolean,
             cv.Optional(CONF_LOCAL_PASSKEY): cv.hex_uint16_t,
             cv.Optional(CONF_EXPECTED_REMOTE_PASSKEY): cv.hex_uint16_t,
             cv.Optional(CONF_ON_SEND_FINISHED): automation.validate_automation(
@@ -154,6 +156,8 @@ async def to_code(config):
         cg.add(var.set_connect_persistent(config[CONF_CONNECT_PERSISTENT]))
     if CONF_AUTO_SEND in config:
         cg.add(var.set_auto_send(config[CONF_AUTO_SEND]))
+    if CONF_RESTORE_FROM_FLASH in config:
+        cg.add(var.set_restore_from_flash(config[CONF_RESTORE_FROM_FLASH]))
     if CONF_LOCAL_PASSKEY in config:
         cg.add(var.set_local_passkey(HexInt(config[CONF_LOCAL_PASSKEY])))
     if CONF_EXPECTED_REMOTE_PASSKEY in config:
@@ -202,10 +206,16 @@ async def to_code(config):
     automation.maybe_simple_id(
         {
             cv.GenerateID(CONF_ID): cv.use_id(BeethowenTransmitterHub),
-            cv.Optional(CONF_COMPLETE_SEND, default=False): cv.templatable(cv.boolean),
+            cv.Optional(CONF_COMPLETE_ONLY): cv.templatable(cv.boolean)
         }
     ),
 )
+
 async def beethowen_transmitter_send_to_code(config, action_id, template_arg, args):
     paren = await cg.get_variable(config[CONF_ID])
-    return cg.new_Pvariable(action_id, template_arg, paren)
+    var = cg.new_Pvariable(action_id, template_arg, paren)
+
+    if CONF_COMPLETE_ONLY in config:
+        cg.add(var.set_complete_only(config[CONF_COMPLETE_ONLY]))
+
+    return var

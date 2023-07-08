@@ -1,16 +1,14 @@
 # IDEAs and TODOs
 
-- add auto expiry somehow, sensor dows not support publishing "N/A" / has_value = false
+- receiver: invalidate after x seconds  / add auto expiry somehow, sensor dows not support publishing "N/A" / has_value = false
 - add icons - as of now I do not understand how default icon by device_class is selected
 - add bthome BLE encryption
 - add ESP-NOW security - though flow is not trivial yet
 - Home Assistant parser integration / esp add beethowen "server" component option to proxy all incoming data to HA / with service to send data / proxy data to - problem:ESP32
 - add event -- source: should I add an action to simply "add" an event? | destination is unclear, should I just create a trigger / or auto-proxy an event to Home Asistant
 - add ACK / return value - addedd value is not clear
-- remove 5* auto repeat // ESP-NOW layer does this automatically
 - auto find mechanism finetuning // e.g. if not found for first iteration just skip measurement and sleep for 10 iterations / thus have an unsuccess counter before reconnect attempt
 - transmitter: invalidate auto_send / per sensor
-- receiver: invalidate after x seconds 
 - separate receiver / handlere with a semaphored queue + external thread
 
 -----------
