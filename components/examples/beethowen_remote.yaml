@@ -9,15 +9,10 @@ globals:
   - id: my_last_cycle_time
     type: int
     restore_value: true
-  - id: my_server_data
-    type: uint64_t
-    restore_value: true
 
 esphome:
   name: $systemName
   on_boot:
-    - lambda: |-
-        if (id(my_server_data)) id(my_beethowen_transmitter)->set_server_data(id(my_server_data));
     - lambda: |-
         if (!isnan(id(my_cycle_counter)) && id(my_cycle_counter)>0) id(my_cycle_counter)++; else id(my_cycle_counter)=1;
         ESP_LOGI("custom", "Cycle count %d.", id(my_cycle_counter));
@@ -57,7 +52,6 @@ beethowen_transmitter:
   auto_send: true
   on_send_finished:
     - lambda: |-
-        id(my_server_data) = id(my_beethowen_transmitter)->get_server_data();
         id(my_last_cycle_time) = millis();
     - deep_sleep.enter
 

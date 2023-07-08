@@ -177,6 +177,11 @@ send
 ~~~~
 This action collects all connected sensor data and sends them thorugh the beethowen channel.
 
+Configuration variables:
+************************
+
+- **complete_only** (*Optional*, bool): Whether to send any available measurements or start sending only if all sensors have valid measurements. Defaults to `true`.
+
 See Also
 --------
 
