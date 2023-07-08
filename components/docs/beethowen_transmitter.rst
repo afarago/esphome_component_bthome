@@ -39,9 +39,9 @@ This component implements local trasmitter and encoding hub that can be used bot
         - measurement_type: pressure
           sensor_id: bmp085_pressure_sensor
       auto_send: true
-      on_finished_send:
+      on_send_finished:
         - lambda: |-
-            ESP_LOGD("app", "on_finished_send lambda");
+            ESP_LOGD("app", "on_send_finished lambda");
             id(my_deep_sleep).begin_sleep(true);
 
     sensor:
@@ -99,7 +99,7 @@ Configuration variables:
 
 Automations
 ***********
-- **on_finished_send** (*Optional*, Automation): An automation to perform when a transmission is finished.
+- **on_send_finished** (*Optional*, Automation): An automation to perform when a transmission is finished.
 
 
 Authorization with a premature security concept:
@@ -157,7 +157,7 @@ Configuration variables:
 Sensor Automation
 -----------------
 
-on_finished_send
+on_send_finished
 ~~~~~~~~~~~~~~~~
 This automation will be triggered when a transmission is finished though the beethowen channel.
 In Lambdas you can get the result and check if there are any outstanding measurements not yet transferred 
