@@ -72,9 +72,9 @@ class Generator(bthome_receiver_base.Generator):
             cg.add(var.set_local_passkey(HexInt(config[CONF_LOCAL_PASSKEY])))
         return var
 
-    def to_code_device(self, parent, config, ID_PROP):
-        devs = super().to_code_device(parent, config, ID_PROP)
-        var = devs.device_
+    async def to_code_device(self, parent, config, ID_PROP):
+        devs = await super().to_code_device(parent, config, ID_PROP)
+        var = devs.get_device()
 
         if CONF_EXPECTED_REMOTE_PASSKEY in config:
             cg.add(

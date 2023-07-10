@@ -14,13 +14,17 @@ namespace esphome
 {
   namespace bthome_receiver_base
   {
-
-    static const char *const TAG = "bthome_receiver_base";
+    static const char *const TAG = "bthome_receiver_base.device";
 
     void BTHomeReceiverBaseDevice::dump_config()
     {
-      ESP_LOGCONFIG(TAG, "address 0x%X", this->address_);
-      ESP_LOGCONFIG(TAG, "dump_option %d", this->dump_option_);
+      ESP_LOGCONFIG(TAG, "device %s at 0x%llX", this->name_prefix_.c_str(), this->address_);
+      ESP_LOGCONFIG(TAG, "  dump_option %d", this->dump_option_);
+      for (auto sensor : my_sensors)
+      {
+        ESP_LOGCONFIG(TAG, "  - connected sensor: %s", sensor->get_name().c_str());
+        ESP_LOGCONFIG(TAG, "    measurement_type: 0x%X", sensor->get_measurement_type());
+      }
     }
 
     void BTHomeReceiverBaseDevice::report_measurements_(vector<bthome_measurement_record_t> measurements, measurement_log_handler_t measurement_log_handler_cb)
@@ -32,7 +36,7 @@ namespace esphome
       // step 1. arrange incoming measurements if not in right order
       // if incoming data is unordered this will not match the sensors
       auto measurement_type_compare = [](const bthome_measurement_record_t &a, const bthome_measurement_record_t &b)
-      { return a.id < b.id; };
+      { return a.id <= b.id; };
 
       if (std::is_sorted(measurements.begin(), measurements.end(), measurement_type_compare))
       {

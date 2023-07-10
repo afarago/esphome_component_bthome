@@ -62,14 +62,19 @@ namespace esphome
       {
       case beethowen_base::BeethowenCommand_FindServerRequest:
       {
-        auto buffer2 = (beethowen_base::beethowen_command_find_found_t *)buffer;
+        auto buffer2 = (beethowen_base::beethowen_command_find_t *)buffer;
         uint8_t *client_mac = beethowen_base::sender;
-        beethowen_base::send_command_found(client_mac, buffer2->server_channel, local_passkey_);
+        beethowen_base::send_command_find(client_mac, local_passkey_, buffer2->server_channel, false); // send ack
       }
       break;
 
       case beethowen_base::BeethowenCommand_Data:
       {
+        // // send ack ahead of processing // TODO: Work in progress
+        // uint8_t *client_mac = beethowen_base::sender;
+        // beethowen_base::send_command_data(client_mac, local_passkey_, nullptr, 0, false); // send ack
+
+        // process answer // TODO: consider adding a queue and a thread
         auto buffer2 = (beethowen_base::beethowen_command_data_t *)buffer;
         auto payload_data = buffer2->data;
         auto payload_len = size - (BEETHOWEN_HEADER_LEN + BEETHOWEN_DATA_EXTRA_LEN);
@@ -79,7 +84,7 @@ namespace esphome
 
       default:
       {
-        ESP_LOGD(TAG, "Unknown command type %d", command);
+        ESP_LOGW(TAG, "Unknown command type 0x%02x", command);
       }
       break;
       }

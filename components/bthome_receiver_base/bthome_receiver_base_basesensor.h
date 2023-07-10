@@ -7,6 +7,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/core/entity_base.h"
 #include "esphome/components/bthome_base/bthome_base_common.h"
 
 namespace esphome
@@ -15,18 +16,16 @@ namespace esphome
   {
     using namespace bthome_base;
 
-    class BTHomeReceiverBaseBaseSensor : public Component
+    class BTHomeReceiverBaseBaseSensor
     {
     public:
-      float get_setup_priority() const override { return setup_priority::DATA; }
-      void dump_config() override;
-
       bthome_measurement_t get_measurement_type() { return this->measurement_type_; };
       void set_measurement_type(uint8_t measurement_type) { measurement_type_ = measurement_type; };
 
       int compare(const uint8_t measurement_type) { return (this->measurement_type_ > measurement_type) - (this->measurement_type_ < measurement_type); }
 
       virtual void publish_data(float value) = 0;
+      virtual const StringRef &get_name() const = 0;
 
     private:
       uint8_t measurement_type_{0};

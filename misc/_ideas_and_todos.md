@@ -10,6 +10,15 @@
 - auto find mechanism finetuning // e.g. if not found for first iteration just skip measurement and sleep for 10 iterations / thus have an unsuccess counter before reconnect attempt
 - transmitter: invalidate auto_send / per sensor
 - separate receiver / handlere with a semaphored queue + external thread
+- send ack / waiting?
+
+----------------------------------------------------------------
+# Speedup the find server
+
+WiFi.mode(WIFI_AP_STA);
+WiFi.softAP("temp", "temppass", channel, true, 0); // this introduces ~1800ms delay - known issue https://github.com/espressif/arduino-esp32/issues/6706
+[12:26:28][D][beethowen:049]: ..setupwifi 3 5206
+[12:26:30][D][beethowen:052]: ..setupwifi 4 7046
 
 -----------
 # ESP-NOW security
@@ -179,7 +188,6 @@ client->server:	0xD2FC, 0x16, 0xABCD, 0x40, <BTHomeData> == data packet
 ```
 
 ----------------------------------------------------------------
-
 # Event handling
 
 decode:

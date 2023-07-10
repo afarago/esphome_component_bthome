@@ -23,12 +23,14 @@ namespace esphome
     class BTHomeReceiverBaseSensor : public sensor::Sensor,
                                      public BTHomeReceiverBaseBaseSensor
     {
-
       void publish_data(float value) override
       {
         this->publish_state(value);
       }
+      const StringRef &get_name() const override
+      {
+        return sensor::Sensor::get_name();
+      }
     };
-
   }
 }

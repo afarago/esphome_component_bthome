@@ -88,6 +88,12 @@ class DeviceStorage:
         self.mac_address_ = mac_address_
         self.name_prefix_ = name_prefix_
 
+    def get_device(self):
+        return self.device_
+    def get_mac_address(self):
+        return self.mac_address_
+    def get_name_prefix(self):
+        return self.name_prefix_
 
 class Generator:
     hub_ = {}
@@ -145,7 +151,7 @@ class Generator:
         ).extend(cv.COMPONENT_SCHEMA)
         return CONFIG_SCHEMA
 
-    def to_code_device(self, parent, config, ID_PROP):
+    async def to_code_device(self, parent, config, ID_PROP):
         # add to device registry
         mac_address_str = str(config[CONF_MAC_ADDRESS])
         if not mac_address_str in self.devices_by_addr_:
@@ -156,6 +162,7 @@ class Generator:
                     parent.add_device(config[CONF_MAC_ADDRESS].as_hex),
                 ),
             )
+            await cg.register_component(var, config)
 
             name_prefix_str = (
                 str(config[CONF_NAME_PREFIX]) if CONF_NAME_PREFIX in config else None
@@ -165,7 +172,7 @@ class Generator:
 
         else:
             devs = self.devices_by_addr_[mac_address_str]
-            var = devs.device_
+            var = devs.get_device()
 
         if CONF_NAME_PREFIX in config:
             cg.add(var.set_name_prefix(config[CONF_NAME_PREFIX]))
@@ -186,7 +193,7 @@ class Generator:
         # iterate around the devices
         if CONF_DEVICES in config:
             for i, config_item in enumerate(config[CONF_DEVICES]):
-                self.to_code_device(var, config_item, CONF_ID)
+                await self.to_code_device(var, config_item, CONF_ID)
 
         # automations
         for conf in config.get(CONF_ON_PACKET, []):
@@ -215,7 +222,7 @@ class Generator:
                 cv.GenerateID(): cv.declare_id(ReceiverSensor),
                 cv.Required(CONF_MEASUREMENT_TYPE): validate_measurement_type,
             }
-        ).extend(cv.COMPONENT_SCHEMA)
+        )
 
     def sensor_schema_factory(
         self, schema_base, ReceiverSensor, validate_measurement_type
@@ -300,7 +307,7 @@ class Generator:
             paren = await cg.get_variable(config[self.hubid_])
 
             mac_address = config[CONF_MAC_ADDRESS]
-            devs = self.to_code_device(paren, config, CONF_BTHomeReceiverBaseDevice_ID)
+            devs = await self.to_code_device(paren, config, CONF_BTHomeReceiverBaseDevice_ID)
 
             # check if sensors are in order, rearrange them if needed
             config_sensors_arr = config[CONF_SENSORS]
@@ -332,12 +339,11 @@ class Generator:
             for i, config_item in enumerate(config_sensors_arr):
                 var_item = cg.new_Pvariable(config_item[CONF_ID])
 
-                if devs.name_prefix_:
+                if devs.get_name_prefix():
                     config_item[CONF_NAME] = (
-                        devs.name_prefix_ + " " + config_item[CONF_NAME]
+                        devs.get_name_prefix() + " " + config_item[CONF_NAME]
                     )
 
-                await cg.register_component(var_item, config_item)
                 await register_sensor_async_fn(var_item, config_item)
 
                 if isinstance(config_item[CONF_MEASUREMENT_TYPE], dict):
@@ -391,7 +397,7 @@ class Generator:
                 # last statement - add the sensor
                 cg.add(
                     paren.add_sensor(
-                        devs.device_, config[CONF_MAC_ADDRESS].as_hex, var_item
+                        devs.get_device(), config[CONF_MAC_ADDRESS].as_hex, var_item
                     )
                 )
 

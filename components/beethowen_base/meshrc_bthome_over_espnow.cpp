@@ -12,17 +12,15 @@
 #include "meshrc_bthome_over_espnow.h"
 #include "beethowen_base_common.h"
 
-// #include "esphome\core\log.h"
+// #include "esphome\core\log.h" // debug mode only
 // using namespace esphome;
 
 namespace beethowen_base
 {
-	// Magic bytes 0xD2 0xFC 0x80
-	// flags: 0x80 stands for BTHome V2 (bits 5-7) //0x40
-	const uint8_t BEETHOWEN_MAGIC_HEADER[BEETHOWEN_MAGIC_HEADER_LEN] = {0xD2, 0xFC};
+
+#define MAX_CALLBACKS 10
 
 	esp_rc_command_callback_t events[MAX_CALLBACKS];
-	beethowen_data_packet_t buffer;
 	uint8_t broadcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 	uint8_t events_num = 0;
 	uint32_t sent_error = 0;
@@ -83,41 +81,6 @@ namespace beethowen_base
 		return success;
 	}
 
-	void fill_beethowen_header(uint8_t command, uint16_t passkey)
-	{
-		memcpy(buffer.command__header.magic, BEETHOWEN_MAGIC_HEADER, BEETHOWEN_MAGIC_HEADER_LEN);
-		buffer.command__header.command = command;
-		buffer.command__header.passkey = passkey;
-	}
-
-	bool send_command_find(uint8_t *dest, uint8_t server_channel, uint16_t passkey)
-	{
-		fill_beethowen_header(BeethowenCommand_FindServerRequest, passkey);
-		buffer.command_find_found.server_channel = server_channel;
-
-		return send(dest, buffer.raw, sizeof(beethowen_command_find_found_t));
-	}
-
-	bool send_command_found(uint8_t *dest, uint8_t server_channel, uint16_t passkey)
-	{
-		fill_beethowen_header(BeethowenCommand_FoundServerResponse, passkey);
-		buffer.command_find_found.server_channel = server_channel;
-
-		return send(dest, buffer.raw, sizeof(beethowen_command_find_found_t));
-	}
-
-	bool send_command_data(uint8_t *dest, uint8_t *data, uint8_t payload_len, uint16_t passkey)
-	{
-		if (payload_len > MAX_BEETHOWEN_PAYLOAD_LENGTH)
-			return false;
-
-		fill_beethowen_header(BeethowenCommand_Data, passkey);
-		buffer.command_data.deviceinfo = BEETHOWEN_BTHOME_DEVICEINFO;
-		memcpy(buffer.command_data.data, data, payload_len);
-
-		return send(dest, buffer.raw, payload_len + BEETHOWEN_HEADER_LEN + BEETHOWEN_DATA_EXTRA_LEN);
-	}
-
 	bool on_command(esp_rc_command_callback_t callback)
 	{
 		if (events_num == MAX_CALLBACKS - 1)
@@ -140,20 +103,6 @@ namespace beethowen_base
 			yield();
 	}
 
-	bool equals(const uint8_t *a, const uint8_t *b, uint8_t size, uint8_t offset = 0)
-	{
-		for (auto i = offset; i < offset + size; i++)
-			if (a[i] != b[i])
-				return false;
-		return true;
-	}
-	bool equals(uint8_t *a, uint8_t *b, uint8_t size, uint8_t offset = 0)
-	{
-		for (auto i = offset; i < offset + size; i++)
-			if (a[i] != b[i])
-				return false;
-		return true;
-	}
 
 #if defined(USE_ESP8266) or defined(USE_ESP32)
 	void addPeer(uint8_t *addr)
@@ -195,7 +144,7 @@ namespace beethowen_base
 		}
 		sending = false;
 		duration = micros() - sendTime;
-	};
+	}; // NOTE: ; is important to keep for ESP8266 lambda function type
 
 #if defined(USE_ESP32)
 	void recvHandler(const uint8_t *addr, const uint8_t *data, int size)
@@ -203,27 +152,25 @@ namespace beethowen_base
 	esp_now_recv_cb_t recvHandler = [](uint8_t *addr, uint8_t *data, uint8_t size)
 #endif
 	{
-		static uint8_t offset, i;
 		// Only receives from master if set
-		if (addr == NULL || master == NULL || equals(addr, master, 6))
+		if (addr == NULL || master == NULL || memcmp(addr, master, 6) == 0)
 		{
 			received++;
 			sender = (uint8_t *)addr;
 
-			uint8_t command = data[BEETHOWEN_MAGIC_HEADER_LEN];
-			if (equals(data, BEETHOWEN_MAGIC_HEADER, BEETHOWEN_MAGIC_HEADER_LEN))
+			BeethowenCommand_e command = get_beethowen_command(data, size);
+			if (command != BeethowenCommand_None)
 			{
-				uint8_t command = data[BEETHOWEN_MAGIC_HEADER_LEN];
-				for (i = 0; i < events_num; i++)
+				for (auto i = 0; i < events_num; i++)
 					if (events[i])
 						events[i](command, data, size);
 			}
+			else
+			{
+				ignored++;
+			}
 		}
-		else
-		{
-			ignored++;
-		}
-	};
+	}; // NOTE: ; is important to keep for ESP8266 lambda function type
 
 	void end()
 	{

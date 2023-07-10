@@ -24,6 +24,12 @@ namespace esphome
     using namespace bthome_base;
 
     typedef uint64_t server_address_and_channel_t;
+    typedef struct
+    {
+      uint8_t measurement_type;
+      sensor::Sensor *sensor;
+      binary_sensor::BinarySensor *binary_sensor;
+    } BTHomeTypedSensor;
 
     class BeethowenTransmitterHub : public PollingComponent
     {
@@ -70,25 +76,21 @@ namespace esphome
 
       float get_setup_priority() const override { return setup_priority::DATA; }
 
-      void add_sensor(uint8_t measurement_type, sensor::Sensor *sensor) { my_sensors.push_back({measurement_type, sensor, nullptr}); }
-      void add_sensor(uint8_t measurement_type, binary_sensor::BinarySensor *binary_sensor) { my_sensors.push_back({measurement_type, nullptr, binary_sensor}); }
+      void add_sensor(uint8_t measurement_type, sensor::Sensor *sensor);
+      void add_sensor(uint8_t measurement_type, binary_sensor::BinarySensor *binary_sensor);
 
       bool send(bool complete_only = false);
 
-      void add_on_send_finished_callback(std::function<void(bool)> callback)
-      {
-        this->on_send_finished_callback_.add(std::move(callback));
-      }
-      void add_on_send_failed_callback(std::function<void()> callback)
-      {
-        this->on_send_failed_callback_.add(std::move(callback));
-      }
+      void add_on_send_finished_callback(std::function<void(bool)> callback) { this->on_send_finished_callback_.add(std::move(callback)); }
+      void add_on_send_failed_callback(std::function<void()> callback) { this->on_send_failed_callback_.add(std::move(callback)); }
 
     protected:
       void beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size);
       bool is_server_found() { return this->server_found_; }
       void connect_to_wifi(uint8_t channel, bool persistent);
       void reinit_server_after_set();
+      void sensor_has_updated(const BTHomeTypedSensor sobj) { this->check_auto_send(); }
+      void check_auto_send();
 
       void restore_state_();
       void save_state_(server_address_and_channel_t server_address_and_channel);
@@ -107,16 +109,10 @@ namespace esphome
       bool restore_from_flash_{true};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
+      // uint8_t last_server_ack_pkt{0}; // work in progress
 
       ESPPreferenceObject prefs_state_;
       uint32_t last_send_millis_{0};
-
-      typedef struct
-      {
-        uint8_t measurement_type;
-        sensor::Sensor *sensor;
-        binary_sensor::BinarySensor *binary_sensor;
-      } BTHomeTypedSensor;
 
       static bool is_sensor_binary(BTHomeTypedSensor sensor_struct)
       {

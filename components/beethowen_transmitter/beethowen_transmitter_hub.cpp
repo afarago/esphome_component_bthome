@@ -39,17 +39,36 @@ namespace esphome
       // Load the state from storage
       if (this->restore_from_flash_)
         this->restore_state_();
+      else
+        ESP_LOGD(TAG, "Initial setup - started searching for Beethowen receiving server...");
+    }
 
-      ESP_LOGD(TAG, "Started searching for Beethowen receiving server...");
+    void BeethowenTransmitterHub::add_sensor(uint8_t measurement_type, sensor::Sensor *sensor)
+    {
+      BTHomeTypedSensor sobj = {measurement_type, sensor, nullptr};
+      my_sensors.push_back(sobj);
+      sensor->add_on_state_callback([this, sobj](bool state)
+                                    { this->sensor_has_updated(sobj); });
+    }
+
+    void BeethowenTransmitterHub::add_sensor(uint8_t measurement_type, binary_sensor::BinarySensor *binary_sensor)
+    {
+      BTHomeTypedSensor sobj = {measurement_type, nullptr, binary_sensor};
+      my_sensors.push_back(sobj);
+      binary_sensor->add_on_state_callback([this, sobj](float state)
+                                           { this->sensor_has_updated(sobj); });
     }
 
     void BeethowenTransmitterHub::beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size)
     {
       ESP_LOGD(TAG, "Command received: 0x%02x, from: %s", command, bthome_base::addr_to_str(beethowen_base::sender).c_str());
+      ESP_LOGD(TAG, "beethowen_on_command_: [%d] %lu", 0, millis()); //!!
 
-      if (command == beethowen_base::BeethowenCommand_FoundServerResponse)
+      switch (command)
       {
-        beethowen_base::beethowen_command_find_found_t *buffer2 = (beethowen_base::beethowen_command_find_found_t *)buffer;
+      case beethowen_base::BeethowenCommand_FindServerRequestAck:
+      {
+        beethowen_base::beethowen_command_find_t *buffer2 = (beethowen_base::beethowen_command_find_t *)buffer;
 
         // validate remote passkey
         if (remote_expected_passkey_ != 0 && buffer2->header.passkey != remote_expected_passkey_)
@@ -68,9 +87,17 @@ namespace esphome
           this->save_state_(this->get_server_data());
         // ESP_LOGI(TAG, "Found server at {address} %s on {channel} %d with {passkey} %04X", bthome_base::addr64_to_str(server_address_).c_str(), buffer2->server_channel);
       }
-      else
-      {
-        ESP_LOGD(TAG, "Unknown command type %d", command);
+      break;
+
+      // case beethowen_base::BeethowenCommand_DataAck:
+      // {
+      //   last_server_ack_pkt = 1; // TODO WiP
+      // }
+      // break;
+
+      default:
+        ESP_LOGW(TAG, "Unknown command type 0x%02x", command);
+        break;
       }
     }
 
@@ -80,9 +107,9 @@ namespace esphome
       {
         if (initial_server_checkin_completed_ || server_channel_ == 0)
         {
-          server_channel_++;
+          server_channel_ += 2; // adjacent channels might overlap, just do this skipping sequence of 1-3-5-7-9-11-2-4-6-8-10-1
           if (server_channel_ > MAX_WIFI_CHANNELS)
-            server_channel_ = 1;
+            server_channel_ = ((server_channel_ - 1) % MAX_WIFI_CHANNELS) + 1; // brings 10->1 and 11->2
         }
         else
         {
@@ -92,17 +119,11 @@ namespace esphome
         connect_to_wifi(server_channel_, connect_persistent_);
 
         ESP_LOGD(TAG, "trying to find server on {channel} %d, {local_passkey_} %04X, {remote_expected_passkey_} %04X", server_channel_, local_passkey_, remote_expected_passkey_);
-        beethowen_base::send_command_find(beethowen_base::broadcast, server_channel_, local_passkey_);
+        beethowen_base::send_command_find(beethowen_base::broadcast, local_passkey_, server_channel_, true);
       }
       else
       {
-        // ESP_LOGD(TAG, "update {auto_send_} %d, {auto_send_done_} %d, {server_channel_} %d, ", auto_send_, auto_send_done_, server_channel_);
-        if (this->auto_send_ &&
-            (!this->last_send_millis_ || (millis() - this->last_send_millis_ > BEETHOWEN_MINIMUM_TIMEOUT_AUTO_SEND)))
-        {
-          if (this->send(true))
-            this->last_send_millis_ = millis();
-        }
+        this->check_auto_send();
       }
     }
 
@@ -157,9 +178,14 @@ namespace esphome
         uint8_t bthome_data_len;
         encoder.buildPaket(bthome_data, bthome_data_len);
 
-        // ESP_LOGD(TAG, "buildPaket: {len}:%d {last}:0x%02x", bthome_data_len, bthome_data[bthome_data_len - 1]);
-        if (beethowen_base::send_command_data(get_server_address_arr(), bthome_data, bthome_data_len, local_passkey_))
+        if (beethowen_base::send_command_data(get_server_address_arr(), local_passkey_, bthome_data, bthome_data_len, true))
           beethowen_base::wait();
+
+        // // wait until server ack // TODO WiP
+        // auto maxTime = 400;
+        // uint32_t delayUntil = millis() + maxTime;
+        // while (millis() <= delayUntil && last_server_ack_pkt == 0)
+        //   yield();
 
         success = beethowen_base::sending_success;
       }
@@ -167,7 +193,8 @@ namespace esphome
       if (!success)
       {
         ESP_LOGD(TAG, "ESPNow send failed, resetting server_found.");
-        server_found_ = false; // invalidate server found
+        server_found_ = false;                     // invalidate server found
+        initial_server_checkin_completed_ = false; // but first try it again on the last used channel
       }
 
       ESP_LOGD(TAG, "Sending finished {success} %d, {has_outstanding_measurements} %d, {count} %d",
@@ -202,6 +229,17 @@ namespace esphome
       {
         ESP_LOGW(TAG, "Failed to save state");
         return;
+      }
+    }
+
+    void BeethowenTransmitterHub::check_auto_send()
+    {
+      // ESP_LOGD(TAG, "update {auto_send_} %d, {auto_send_done_} %d, {server_channel_} %d, ", auto_send_, auto_send_done_, server_channel_);
+      if (is_server_found() && this->auto_send_ &&
+          (!this->last_send_millis_ || (millis() - this->last_send_millis_ > BEETHOWEN_MINIMUM_TIMEOUT_AUTO_SEND)))
+      {
+        if (this->send(true))
+          this->last_send_millis_ = millis();
       }
     }
   }
