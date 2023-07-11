@@ -7,6 +7,7 @@
 #pragma once
 
 #include <string>
+#include "bthome_common_generated.h"
 
 namespace bthome_base
 {

@@ -35,50 +35,56 @@ namespace bthome_base
     this->m_count = 0;
   }
 
-  bool BTHomeEncoder::addMeasurementState(bthome_measurement_t sensor_id, uint8_t state, uint8_t steps)
+  bool BTHomeEncoder::performAddMeasurement_(bthome_measurement_t sensor_id, uint8_t len, std::function<void()> executeCb)
   {
-    // if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
-    if ((this->m_sensorDataIdx + 2 + (steps > 0 ? 1 : 0)) > (measurement_max_len_))
+    if (this->m_sensorDataIdx + len > measurement_max_len_)
       return false;
 
     this->m_count++;
-    this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
-    this->m_sensorDataIdx++;
-    this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(state & 0xff);
-    this->m_sensorDataIdx++;
-    if (steps > 0)
-    {
-      this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(steps & 0xff);
-      this->m_sensorDataIdx++;
-    }
-    if (!this->m_sortEnable)
-    {
-      if (sensor_id < this->last_object_id)
-        this->m_sortEnable = true;
-    }
-    last_object_id = sensor_id;
+    addByteToMeasurement_(static_cast<uint8_t>(sensor_id & 0xff));
+
+    executeCb();
+
+    if (!this->m_sortEnable && sensor_id < this->last_object_id)
+      this->m_sortEnable = true;
+
+    this->last_object_id = sensor_id;
 
     return true;
   }
 
+  bool BTHomeEncoder::addMeasurementState(bthome_measurement_t sensor_id, bool state)
+  {
+    return performAddMeasurement_(sensor_id, 1 + 1, [&]
+                                  {
+                                    // sensor_id is added in performAddMeasurement_ call
+                                    addByteToMeasurement_(static_cast<uint8_t>(state & 0xff));
+                                    // callback finished
+                                  });
+  }
+
+  bool BTHomeEncoder::addMeasurementEvent(bthome_measurement_t sensor_id, uint8_t event_id, uint8_t steps)
+  {
+    return performAddMeasurement_(sensor_id, 1 + 1 + (steps > 0 ? 1 : 0), [&]
+                                  {
+                                    // sensor_id is added in performAddMeasurement_ call
+                                    addByteToMeasurement_(static_cast<uint8_t>(event_id & 0xff));
+                                    // dimmer has steps
+                                    if (steps > 0)
+                                      addByteToMeasurement_(static_cast<uint8_t>(steps & 0xff));
+                                    // callback finished
+                                  });
+  }
+
   bool BTHomeEncoder::addMeasurementValueRaw(bthome_measurement_t sensor_id, uint64_t raw_value, uint8_t size)
   {
-    this->m_count++;
-    this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>(sensor_id & 0xff);
-    this->m_sensorDataIdx++;
-    for (uint8_t i = 0; i < size; i++)
-    {
-      this->m_sensorData[this->m_sensorDataIdx] = static_cast<uint8_t>((raw_value >> (8 * i)) & 0xff);
-      this->m_sensorDataIdx++;
-    }
-    if (!this->m_sortEnable)
-    {
-      if (sensor_id < this->last_object_id)
-        this->m_sortEnable = true;
-    }
-    last_object_id = sensor_id;
-
-    return true;
+    return performAddMeasurement_(sensor_id, 1 + size, [&]
+                                  {
+                                    // sensor_id is added in performAddMeasurement_ call
+                                    for (uint8_t i = 0; i < size; i++)
+                                      addByteToMeasurement_(static_cast<uint8_t>((raw_value >> (8 * i)) & 0xff));
+                                    // callback finished
+                                  });
   }
 
   bool BTHomeEncoder::addMeasurementValue(bthome_measurement_t sensor_id, uint64_t value)
@@ -86,14 +92,10 @@ namespace bthome_base
     BTHomeDataFormat dataformat = getDataFormat(sensor_id);
     uint8_t size = dataformat.len_in_bytes;
     uint16_t factor = dataformat.factor_multiple;
-
-    // if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
     if (size == 0)
       return false;
-    if ((this->m_sensorDataIdx + size + 1) > (measurement_max_len_))
-      return false;
 
-    uint64_t value2 = value * factor;
+    uint64_t value2 = factor > 1 ? value * factor : value;
     return addMeasurementValueRaw(sensor_id, value2, size);
   }
 
@@ -102,11 +104,7 @@ namespace bthome_base
     BTHomeDataFormat dataformat = getDataFormat(sensor_id);
     uint8_t size = dataformat.len_in_bytes;
     uint16_t factor = dataformat.factor_multiple;
-
-    // if ((this->m_sensorDataIdx + size + 1) <= (MEASUREMENT_MAX_LEN - (this->m_encryptEnable ? 8 : 0))) {
     if (size == 0)
-      return false;
-    if ((this->m_sensorDataIdx + size + 1) > (measurement_max_len_))
       return false;
 
     uint64_t value2;
@@ -114,12 +112,12 @@ namespace bthome_base
     {
     case HaBleType_uint:
     {
-      value2 = static_cast<uint64_t>(value * factor);
+      value2 = static_cast<uint64_t>(factor > 1 ? value * factor : value);
     }
     break;
     case HaBleType_sint:
     {
-      int64_t value2s = static_cast<int64_t>(value * factor);
+      int64_t value2s = static_cast<int64_t>(factor > 1 ? value * factor : value);
       value2 = signextend<uint64_t, 64>(value2s);
     }
     break;

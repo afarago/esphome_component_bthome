@@ -34,7 +34,7 @@ namespace esphome
     class BeethowenTransmitterHub : public PollingComponent
     {
     public:
-#define BEETHOWEN_TAKT_TIME 100
+#define BEETHOWEN_TAKT_TIME 300
 #define BEETHOWEN_MINIMUM_TIMEOUT_AUTO_SEND (10 * 1000)
       BeethowenTransmitterHub() : PollingComponent(BEETHOWEN_TAKT_TIME)
       {
@@ -94,6 +94,8 @@ namespace esphome
 
       void restore_state_();
       void save_state_(server_address_and_channel_t server_address_and_channel);
+      void restore_packetid_state_rtc_();
+      void save_packetid_state_rtc_(uint8_t packet_id);
 
       CallbackManager<void(bool)> on_send_finished_callback_;
       CallbackManager<void()> on_send_failed_callback_;
@@ -109,10 +111,13 @@ namespace esphome
       bool restore_from_flash_{true};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
-      // uint8_t last_server_ack_pkt{0}; // work in progress
 
       ESPPreferenceObject prefs_state_;
+      ESPPreferenceObject prefs_packetid_state_;
+
       uint32_t last_send_millis_{0};
+      uint8_t send_packet_id_{0};
+      uint8_t last_packet_id_acked{0};
 
       static bool is_sensor_binary(BTHomeTypedSensor sensor_struct)
       {

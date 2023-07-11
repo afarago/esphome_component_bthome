@@ -30,6 +30,7 @@ namespace esphome
 
     protected:
       uint16_t local_passkey_{0};
+      bool send_data_ack_{false};
 
       void beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size);
       bthome_receiver_base::BTHomeReceiverBaseDevice* create_device(const mac_address_t address) override { return new BeethowenReceiverDevice(address); }

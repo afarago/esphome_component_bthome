@@ -174,8 +174,10 @@ namespace beethowen_base
 
 	void end()
 	{
+		esp_now_deinit();
 		esp_now_unregister_recv_cb();
 		esp_now_unregister_send_cb();
+		esp_now_is_init = false;
 	}
 
 	void begin(bool use_broadcast)

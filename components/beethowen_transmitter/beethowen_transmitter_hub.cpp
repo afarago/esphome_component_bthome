@@ -32,6 +32,11 @@ namespace esphome
 
     void BeethowenTransmitterHub::setup()
     {
+#define GLOBAL_BEETHOWEN_PACKETID_PREFS_ID 127671120UL
+      this->prefs_packetid_state_ = global_preferences->make_preference<uint8_t>(GLOBAL_BEETHOWEN_PACKETID_PREFS_ID, false); // save it to rtc
+#define GLOBAL_BEETHOWEN_PREFS_ID 127671119UL
+      this->prefs_state_ = global_preferences->make_preference<server_address_and_channel_t>(GLOBAL_BEETHOWEN_PREFS_ID, true); // save it to flash
+
       // setup wifinow hooks
       beethowen_base::on_command([&](const uint8_t command, const uint8_t *buffer, const int size)
                                  { beethowen_on_command_(command, buffer, size); });
@@ -41,6 +46,9 @@ namespace esphome
         this->restore_state_();
       else
         ESP_LOGD(TAG, "Initial setup - started searching for Beethowen receiving server...");
+
+      // restore packetid state from RTC
+      restore_packetid_state_rtc_();
     }
 
     void BeethowenTransmitterHub::add_sensor(uint8_t measurement_type, sensor::Sensor *sensor)
@@ -62,7 +70,6 @@ namespace esphome
     void BeethowenTransmitterHub::beethowen_on_command_(const uint8_t command, const uint8_t *buffer, const int size)
     {
       ESP_LOGD(TAG, "Command received: 0x%02x, from: %s", command, bthome_base::addr_to_str(beethowen_base::sender).c_str());
-      ESP_LOGD(TAG, "beethowen_on_command_: [%d] %lu", 0, millis()); //!!
 
       switch (command)
       {
@@ -89,11 +96,13 @@ namespace esphome
       }
       break;
 
-      // case beethowen_base::BeethowenCommand_DataAck:
-      // {
-      //   last_server_ack_pkt = 1; // TODO WiP
-      // }
-      // break;
+        case beethowen_base::BeethowenCommand_DataAck:
+        {
+          beethowen_base::beethowen_command_data_ack_t *buffer2 = (beethowen_base::beethowen_command_data_ack_t *)buffer;
+          ESP_LOGD(TAG, "Data packet ACKed %d", buffer2->packet_id_acked);
+          this->last_packet_id_acked = buffer2->packet_id_acked;
+        }
+        break;
 
       default:
         ESP_LOGW(TAG, "Unknown command type 0x%02x", command);
@@ -118,7 +127,7 @@ namespace esphome
 
         connect_to_wifi(server_channel_, connect_persistent_);
 
-        ESP_LOGD(TAG, "trying to find server on {channel} %d, {local_passkey_} %04X, {remote_expected_passkey_} %04X", server_channel_, local_passkey_, remote_expected_passkey_);
+        ESP_LOGD(TAG, "trying to find server on {channel} %d, {local_passkey_} 0x%04X, {remote_expected_passkey_} 0x%04X", server_channel_, local_passkey_, remote_expected_passkey_);
         beethowen_base::send_command_find(beethowen_base::broadcast, local_passkey_, server_channel_, true);
       }
       else
@@ -129,15 +138,16 @@ namespace esphome
 
     void BeethowenTransmitterHub::reinit_server_after_set()
     {
-      connect_to_wifi(this->server_channel_, this->connect_persistent_);
       ESP_LOGI(TAG, "Connecting server to {address} %s on {channel} %d",
                bthome_base::addr64_to_str(this->server_address_).c_str(), this->server_channel_);
+      connect_to_wifi(this->server_channel_, this->connect_persistent_);
     }
 
     void BeethowenTransmitterHub::connect_to_wifi(uint8_t channel, bool persistent)
     {
       // ESP_LOGD(TAG, "connect_to_wifi channel {channel}, persistent {persistent}")
-      WiFi.disconnect();
+      if (WiFi.isConnected())
+        WiFi.disconnect();
       beethowen_base::setupwifi(channel, persistent);
       beethowen_base::begin(false);
     }
@@ -147,8 +157,12 @@ namespace esphome
       bthome_base::BTHomeEncoder encoder(MAX_BEETHOWEN_PAYLOAD_LENGTH);
       encoder.resetMeasurement();
 
+      // add the packet id as first measurement
+      encoder.addMeasurementValue(bthome_base::BTHOME_PACKET_ID_VALUE, this->send_packet_id_);
+
       // collect data
       bool has_outstanding_measurements = false;
+      bool has_meaningful_measurements = false;
       for (auto btsensor_struct : my_sensors)
       {
         // ESP_LOGD(TAG, ".send {measurement_type} %d, {has_sensor_state} %d", btsensor_struct.measurement_type, has_sensor_state(btsensor_struct));
@@ -158,6 +172,7 @@ namespace esphome
             encoder.addMeasurementState(btsensor_struct.measurement_type, get_sensor_binarystate(btsensor_struct).value());
           else
             encoder.addMeasurementValue(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
+          has_meaningful_measurements = true;
         }
         else
         {
@@ -172,20 +187,27 @@ namespace esphome
 
       // perform send only if there is anything to send
       bool success = false;
-      if (encoder.get_count() > 0)
+      if (has_meaningful_measurements)
       {
+        // assemble the packet
         uint8_t *bthome_data;
         uint8_t bthome_data_len;
         encoder.buildPaket(bthome_data, bthome_data_len);
 
-        if (beethowen_base::send_command_data(get_server_address_arr(), local_passkey_, bthome_data, bthome_data_len, true))
+        if (beethowen_base::send_command_data(get_server_address_arr(), local_passkey_, bthome_data, bthome_data_len))
           beethowen_base::wait();
 
-        // // wait until server ack // TODO WiP
-        // auto maxTime = 400;
-        // uint32_t delayUntil = millis() + maxTime;
-        // while (millis() <= delayUntil && last_server_ack_pkt == 0)
-        //   yield();
+        // auto dataAckOption = this->get_wait_data_ack_option();
+        // if (dataAckOption != nullptr)
+        // {
+        //   // wait until server ack // TODO WiP
+        //   auto maxTime = dataAckOption.timeOut; // 400;
+        //   uint32_t delayUntil = millis() + maxTime;
+        //   while (millis() <= delayUntil && last_packet_id_acked == this->send_packet_id_)
+        //     yield();
+        // }
+
+        this->save_packetid_state_rtc_(++this->send_packet_id_);
 
         success = beethowen_base::sending_success;
       }
@@ -213,23 +235,27 @@ namespace esphome
     void BeethowenTransmitterHub::restore_state_()
     {
       server_address_and_channel_t recovered{};
-#define GLOBAL_BEETHOWEN_PREFS_ID 127671119UL
-      this->prefs_state_ = global_preferences->make_preference<server_address_and_channel_t>(GLOBAL_BEETHOWEN_PREFS_ID, true); // save it to flash
       bool restored = this->prefs_state_.load(&recovered);
       if (restored)
-      {
         this->set_server_data(recovered);
-      }
     }
 
     void BeethowenTransmitterHub::save_state_(server_address_and_channel_t server_address_and_channel)
     {
       ESP_LOGV(TAG, "%s: Saving state", this->device_id_.c_str());
       if (!this->prefs_state_.save(&server_address_and_channel))
-      {
         ESP_LOGW(TAG, "Failed to save state");
-        return;
-      }
+    }
+
+    void BeethowenTransmitterHub::restore_packetid_state_rtc_()
+    {
+      this->prefs_packetid_state_.load(&this->send_packet_id_);
+    }
+
+    void BeethowenTransmitterHub::save_packetid_state_rtc_(uint8_t packet_id)
+    {
+      if (!this->prefs_packetid_state_.save(&packet_id))
+        ESP_LOGW(TAG, "Failed to save packetid state");
     }
 
     void BeethowenTransmitterHub::check_auto_send()

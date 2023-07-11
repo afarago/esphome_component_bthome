@@ -28,7 +28,7 @@ esp32_ble_tracker:
   scan_parameters:
     active: false
 
-bthome_receiver:
+bthome_ble_receiver:
   dump: unmatched
   devices:
     - mac_address: 11:22:33:44:55:66
@@ -39,7 +39,7 @@ bthome_receiver:
       dump: all
 
 sensor:
-  - platform: bthome_receiver
+  - platform: bthome_ble_receiver
     mac_address: 11:22:33:44:55:66
     sensors:
       - measurement_type: temperature
@@ -49,7 +49,7 @@ sensor:
       - measurement_type: packet_id
         name: PacketId
 
-  - platform: bthome_receiver
+  - platform: bthome_ble_receiver
     mac_address: AA:BB:CC:DD:EE:FF
     sensors:
       - measurement_type: temperature
@@ -63,14 +63,14 @@ sensor:
       - measurement_type: count_4
         name: Count
 
-  - platform: bthome_receiver
+  - platform: bthome_ble_receiver
     mac_address: 22:33:44:55:66:77
     sensors:
       - measurement_type: temperature
         name: BTHome Workshop Temperature
 
 binary_sensor:
-  - platform: bthome_receiver
+  - platform: bthome_ble_receiver
     mac_address: AA:BB:CC:DD:EE:FF
     sensors:
       - measurement_type: opening

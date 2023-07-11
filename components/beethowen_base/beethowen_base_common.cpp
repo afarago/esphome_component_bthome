@@ -48,15 +48,23 @@ namespace beethowen_base
         return send(dest, buffer.raw, sizeof(beethowen_command_find_t));
     }
 
-    bool send_command_data(uint8_t *dest, uint16_t passkey, uint8_t *data, uint8_t payload_len, bool is_request_not_ack)
+    bool send_command_data(uint8_t *dest, uint16_t passkey, uint8_t *data, uint8_t payload_len)
     {
         if (payload_len > MAX_BEETHOWEN_PAYLOAD_LENGTH)
             return false;
 
-        fill_beethowen_header(is_request_not_ack ? BeethowenCommand_Data : BeethowenCommand_DataAck, passkey);
+        fill_beethowen_header(BeethowenCommand_Data, passkey);
         buffer.command_data.deviceinfo = Beethowen_BTHome_DeviceInfo_Flags;
         memcpy(buffer.command_data.data, data, payload_len);
 
         return send(dest, buffer.raw, payload_len + BEETHOWEN_HEADER_LEN + BEETHOWEN_DATA_EXTRA_LEN);
+    }
+
+    bool send_command_data_ack(uint8_t *dest, uint16_t passkey, uint8_t packet_id_acked)
+    {
+        fill_beethowen_header(BeethowenCommand_DataAck, passkey);
+        buffer.command_data_ack.packet_id_acked = packet_id_acked;
+
+        return send(dest, buffer.raw, sizeof(beethowen_command_data_ack_t));
     }
 }

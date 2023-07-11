@@ -71,16 +71,17 @@ namespace esphome
           measurement_log_handler(item, false);
     }
 
-    void BTHomeReceiverBaseHub::parse_message_bthome_(const mac_address_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
+    vector<bthome_measurement_record_t> BTHomeReceiverBaseHub::parse_message_bthome_(const mac_address_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
     {
+      vector<bthome_measurement_record_t> measurements;
       // TODO: should do a loop here instead of finding the right device and stopping
       //  for (auto btdevice_i : this->my_devices)
       //    if (btdevice_i->match(address))
       //      return btdevice_i;
 
       auto *btdevice = get_device_by_address(address);
-      if (!btdevice && this->get_dump_option() == DumpOption_None)
-        return;
+      // if (!btdevice && this->get_dump_option() == DumpOption_None)
+      //   return;
 
 #ifdef ESPHOME_LOG_HAS_DEBUG
       if (dump_packets_option_)
@@ -94,7 +95,6 @@ namespace esphome
 #endif // ESPHOME_LOG_LEVEL_DEBUG
 
       // parse the payload and report measurements in the callback, will be fixing this to V2
-      vector<bthome_measurement_record_t> measurements;
       bthome_base::parse_payload_bthome(
           payload_data, payload_length, proto,
           [&](uint8_t measurement_type, float value)
@@ -111,6 +111,9 @@ namespace esphome
 
       // trigger automation
       this->on_packet_callback_.call(address, measurements);
+
+      // return parsed measurements
+      return measurements;
     }
 
   }

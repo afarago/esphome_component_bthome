@@ -11,14 +11,14 @@
 
 namespace beethowen_base
 {
-  typedef enum
-  {
-    BeethowenCommand_None = 0x00,
-    BeethowenCommand_FindServerRequest = 0x01,
-    BeethowenCommand_FindServerRequestAck = 0x02,
-    BeethowenCommand_Data = 0x16,
-    BeethowenCommand_DataAck = 0x17,
-  } BeethowenCommand_e;
+    typedef enum
+    {
+        BeethowenCommand_None = 0x00,
+        BeethowenCommand_FindServerRequest = 0x01,
+        BeethowenCommand_FindServerRequestAck = 0x02,
+        BeethowenCommand_Data = 0x16,
+        BeethowenCommand_DataAck = 0x17,
+    } BeethowenCommand_e;
 
 #define ESP_NOW_MAX_DATA_LEN 250
 #define BEETHOWEN_MAGIC_HEADER_LEN 2
@@ -46,15 +46,23 @@ namespace beethowen_base
         uint8_t data[MAX_BEETHOWEN_PAYLOAD_LENGTH];
     } beethowen_command_data_t;
 
+    typedef struct __attribute__((packed))
+    {
+        beethowen_command_header_t header;
+        uint8_t packet_id_acked;
+    } beethowen_command_data_ack_t;
+
     typedef union __attribute__((packed))
     {
         uint8_t raw[ESP_NOW_MAX_DATA_LEN];
         beethowen_command_header_t command__header;
         beethowen_command_find_t command_find;
         beethowen_command_data_t command_data;
+        beethowen_command_data_ack_t command_data_ack;
     } beethowen_data_packet_t;
 
     BeethowenCommand_e get_beethowen_command(const uint8_t *data, const int size);
     bool send_command_find(uint8_t *dest, uint16_t passkey, uint8_t server_channel, bool is_request_not_ack);
-    bool send_command_data(uint8_t *dest, uint16_t passkey, uint8_t *data, uint8_t payload_len, bool is_request_not_ack);
+    bool send_command_data(uint8_t *dest, uint16_t passkey, uint8_t *data, uint8_t payload_len);
+    bool send_command_data_ack(uint8_t *dest, uint16_t passkey, uint8_t packet_id_acked);
 }

@@ -13,6 +13,12 @@
 - send ack / waiting?
 
 ----------------------------------------------------------------
+# Add packet id
+packet id
+0x00 0x01
+
+
+----------------------------------------------------------------
 # Speedup the find server
 
 WiFi.mode(WIFI_AP_STA);
