@@ -70,7 +70,8 @@ for imain in range(4):
             data_type_signed = data_type.startswith("sint")
             data_type_length = 1
             try:
-                data_type_length = int(re.search("\((\d+)", data_type).group(1))
+                data_type_length = int(
+                    re.search("\((\d+)", data_type).group(1))
             except:
                 pass
         # elif main_type == "event_binary":
@@ -185,7 +186,8 @@ for index, item in enumerate(data):
         # print(">>>", property_key)
         # find smallest one and mark as default
         min_measurement_type_index, _ = min(
-            [(index, item["measurement_type"]) for index, item in enumerate(alike_list)]
+            [(index, item["measurement_type"])
+             for index, item in enumerate(alike_list)]
         )
         # print(alike_list[min_measurement_type_index])
         alike_list[min_measurement_type_index]["default"] = True
@@ -193,9 +195,11 @@ for index, item in enumerate(data):
         # rename all based on data_type_length
         # first - find dimenstions in which they differ
         value_matrix = []
-        differentiator_matrix = [[] for _ in range(len(differentiator_candidates))]
+        differentiator_matrix = [[]
+                                 for _ in range(len(differentiator_candidates))]
         for index, item in enumerate(alike_list):
-            value_row = [item[candidate] for candidate in differentiator_candidates]
+            value_row = [item[candidate]
+                         for candidate in differentiator_candidates]
             value_matrix.append(value_row)
             for cindex, candidate in enumerate(differentiator_candidates):
                 differentiator_matrix[cindex].append(item[candidate])
@@ -242,7 +246,8 @@ for index, item in enumerate(data):
 
                 # ###
                 # accuracy_decimal: default/first elem should not get extension, yet others should receive coarse/precise
-                min_value = min([item["measurement_type"] for item in alike_list])
+                min_value = min([item["measurement_type"]
+                                for item in alike_list])
                 if min_value == item["measurement_type"]:
                     base_accuracy_at = item
                     # differentiator = list(differentiator_candidates)[cindex]
@@ -304,11 +309,13 @@ for index, item in enumerate(data):
 
 ################################################################
 
-fname = TARGET_DIR + "bthome_common_generated.h"
-print(f"generating {fname}...")
-f = open(fname, "w", encoding="utf-8")
-f.write(
-    """
+
+def create_bthome_common_generated(data):
+
+    fname = TARGET_DIR + "bthome_common_generated.h"
+    print(f"generating {fname}...")
+    f = open(fname, "w", encoding="utf-8")
+    f.write("""
 /* auto generated, do not edit */
 
 #pragma once
@@ -317,115 +324,153 @@ f.write(
 namespace bthome_base
 {
 """
-)
-
-################################################################
-
-
-def generate_encoder_enum(data):
-    values = []
-    for item in data:
-        if item["main_type"] == "numeric":
-            extension = "VALUE"
-        elif item["main_type"] == "binary":
-            extension = "STATE"
-        # elif item["main_type"] == "event_binary":
-        #     extension = "EVENT"
-        else:
-            extension = "__"
-        values.append(
-            f'  BTHOME_{item["property_unique"].upper()}_{extension} = {item["measurement_type_hex"]}'
-        )
-    return "typedef enum {\n" + ", \n".join(values) + "\n} BTHome_e;\n\n"
-
-
-data1 = generate_encoder_enum(data)
-f.write(data1)
-
-################################################################
-
-
-def generate_decoder_array(data):
-    values = []
-    maxvalue = max(
-        # [item["measurement_type"] for item in data if not item["event_is_subevent"]]
-        [item["measurement_type"] for item in data]
-    )
-    for measurement_type in range(maxvalue):
-        item = None
-        try:
-            item = [
-                item2 for item2 in data if item2["measurement_type"] == measurement_type
-            ][0]
-        except:
-            pass
-        if item:
-            values.append(
-                "  "
-                + "0b"
-                + format((item["decode_datatype_key"]), "08b")
-                + f', /* {"0x%02x" %item["measurement_type"]} | {item["property"]} | {item["property_unique"]} | {item["data_type"]} | {item["accuracy_decimals"]} */'
             )
-        else:
-            values.append("  0b00000000, /* unused */")
-    names = "\n".join(values)
-    return (
-        "static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ \n"
-        + names
-        + "\n};\n"
-    )
 
+    # ---
 
-data1 = generate_decoder_array(data)
-f.write(data1)
+    def generate_encoder_enum(data):
+        values = []
+        for item in data:
+            if item["main_type"] == "numeric":
+                extension = "VALUE"
+            elif item["main_type"] == "binary":
+                extension = "STATE"
+            # elif item["main_type"] == "event_binary":
+            #     extension = "EVENT"
+            else:
+                extension = "__"
+            values.append(
+                f'  BTHOME_{item["property_unique"].upper()}_{extension} = {item["measurement_type_hex"]}'
+            )
+        return "typedef enum {\n" + ", \n".join(values) + "\n} BTHome_e;\n\n"
 
-################################################################
+    data1 = generate_encoder_enum(data)
+    f.write(data1)
 
-f.write(
-    """
+    # ---
+
+    def generate_decoder_array(data):
+        values = []
+        maxvalue = max(
+            # [item["measurement_type"] for item in data if not item["event_is_subevent"]]
+            [item["measurement_type"] for item in data]
+        )
+        for measurement_type in range(maxvalue):
+            item = None
+            try:
+                item = [
+                    item2 for item2 in data if item2["measurement_type"] == measurement_type
+                ][0]
+            except:
+                pass
+            if item:
+                values.append(
+                    "  "
+                    + "0b"
+                    + format((item["decode_datatype_key"]), "08b")
+                    + f', /* {"0x%02x" %item["measurement_type"]} | {item["property"]} | {item["property_unique"]} | {item["data_type"]} | {item["accuracy_decimals"]} */'
+                )
+            else:
+                values.append("  0b00000000, /* unused */")
+        names = "\n".join(values)
+        return (
+            "static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ \n"
+            + names
+            + "\n};\n"
+        )
+
+    data1 = generate_decoder_array(data)
+    f.write(data1)
+
+    # ---
+
+    f.write("""
 }
 """
-)
-f.close()
+            )
+    f.close()
+
+
+create_bthome_common_generated(data)
 
 ################################################################
 
 
-def generate_const(data, main_type):
-    values = {}
+def create_const_generated(data):
+
+    global main_types
+
+    def generate_const(data, main_type):
+        values = {}
+        for item in data:
+            if item["main_type"] == main_type:
+                convitem = {"measurement_type": item["measurement_type"]}
+                if item["accuracy_decimals"] != None:
+                    convitem["accuracy_decimals"] = item["accuracy_decimals"]
+                if item["unit_of_measurement"] != None:
+                    convitem["unit_of_measurement"] = item["unit_of_measurement"]
+                if item["device_class"] != None:
+                    convitem["device_class"] = item["device_class"]
+                # if item["icon"] != None: # NOTE: check and understand how and which default icon is assigned in home assistant
+                #     convitem["icon"] = item["icon"]
+                values[item["property_unique"]] = convitem
+
+        retval = json.dumps(values, indent=4, ensure_ascii=False)
+        # retval = re.sub('(\"measurement_type\": )(\d+)', lambda i: hex(int(i.group(1))),retval)
+        retval = re.sub(
+            '(?<="measurement_type": )(\d+)', lambda i: f"0x{int(i.group(0)):02x}", retval
+        )
+
+        return retval
+
+    fname = TARGET_DIR + "const_generated.py"
+    print(f"generating {fname}...")
+    f = open(fname, "w", encoding="utf-8")
+
+    for imain in set(main_types):
+        if imain is None:
+            continue
+
+        f.write(f"MEASUREMENT_TYPES_{imain.upper()}_SENSOR = ")
+        data1 = generate_const(data, imain)
+        f.write(data1)
+        f.write("\n")
+
+    f.close()
+
+
+create_const_generated(data)
+
+################################################################
+
+
+def dump_types_for_doc(data):
+
+    col_length = 20
+    col_sep_char = " "
+
+    def gen_header(achar, asepchar, data_columns):
+        return asepchar.join([achar*(col_length)]*(len(data_columns))) + "\n"
+
+    fname = "../components/docs/" + "bthome_common_format_generated.rst"
+    print(f"generating {fname}...")
+    f = open(fname, "w", encoding="utf-8")
+
+    data_columns = ["Object id", "Property",
+                    "Length (byte)", "Decimals", "Unit", "Type"]
+    f.write(gen_header("=", " ", data_columns))
+    f.write(col_sep_char.join(('{0: <'+str(col_length)+'}').format(col)
+            for col in data_columns) + "\n")
+    f.write(gen_header("-", " ", data_columns))
+
+    data_columns = ["measurement_type_hex", "property_unique",
+                    "data_type_length", "accuracy_decimals", "unit_of_measurement", "main_type"]
     for item in data:
-        if item["main_type"] == main_type:
-            convitem = {"measurement_type": item["measurement_type"]}
-            if item["accuracy_decimals"] != None:
-                convitem["accuracy_decimals"] = item["accuracy_decimals"]
-            if item["unit_of_measurement"] != None:
-                convitem["unit_of_measurement"] = item["unit_of_measurement"]
-            if item["device_class"] != None:
-                convitem["device_class"] = item["device_class"]
-            # if item["icon"] != None: # NOTE: check and understand how and which default icon is assigned in home assistant
-            #     convitem["icon"] = item["icon"]
-            values[item["property_unique"]] = convitem
+        f.write(col_sep_char.join(('{0: <'+str(col_length)+'}').format(
+            item[col] or " ") for col in data_columns) + "\n")
+    f.write(gen_header("=", " ", data_columns))
 
-    retval = json.dumps(values, indent=4, ensure_ascii=False)
-    # retval = re.sub('(\"measurement_type\": )(\d+)', lambda i: hex(int(i.group(1))),retval)
-    retval = re.sub(
-        '(?<="measurement_type": )(\d+)', lambda i: f"0x{int(i.group(0)):02x}", retval
-    )
-
-    return retval
+    f.close()
 
 
-fname = TARGET_DIR + "const_generated.py"
-print(f"generating {fname}...")
-f = open(fname, "w", encoding="utf-8")
-
-for imain in set(main_types):
-    if imain is None:
-        continue
-
-    f.write(f"MEASUREMENT_TYPES_{imain.upper()}_SENSOR = ")
-    data1 = generate_const(data, imain)
-    f.write(data1)
-    f.write("\n")
-
-f.close()
+dump_types_for_doc(data)

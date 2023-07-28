@@ -1,3 +1,144 @@
+MEASUREMENT_TYPES_BINARY_SENSOR = {
+    "generic_boolean": {
+        "measurement_type": 0x0f,
+        "accuracy_decimals": 0
+    },
+    "power": {
+        "measurement_type": 0x10,
+        "accuracy_decimals": 0,
+        "device_class": "power"
+    },
+    "opening": {
+        "measurement_type": 0x11,
+        "accuracy_decimals": 0,
+        "device_class": "opening"
+    },
+    "battery": {
+        "measurement_type": 0x15,
+        "accuracy_decimals": 0,
+        "device_class": "battery"
+    },
+    "battery_charging": {
+        "measurement_type": 0x16,
+        "accuracy_decimals": 0,
+        "device_class": "battery"
+    },
+    "carbon_monoxide": {
+        "measurement_type": 0x17,
+        "accuracy_decimals": 0,
+        "device_class": "carbon_monoxide"
+    },
+    "cold": {
+        "measurement_type": 0x18,
+        "accuracy_decimals": 0,
+        "device_class": "cold"
+    },
+    "connectivity": {
+        "measurement_type": 0x19,
+        "accuracy_decimals": 0,
+        "device_class": "connectivity"
+    },
+    "door": {
+        "measurement_type": 0x1a,
+        "accuracy_decimals": 0,
+        "device_class": "door"
+    },
+    "garage_door": {
+        "measurement_type": 0x1b,
+        "accuracy_decimals": 0,
+        "device_class": "garage_door"
+    },
+    "gas": {
+        "measurement_type": 0x1c,
+        "accuracy_decimals": 0,
+        "device_class": "gas"
+    },
+    "heat": {
+        "measurement_type": 0x1d,
+        "accuracy_decimals": 0,
+        "device_class": "heat"
+    },
+    "light": {
+        "measurement_type": 0x1e,
+        "accuracy_decimals": 0,
+        "device_class": "light"
+    },
+    "lock": {
+        "measurement_type": 0x1f,
+        "accuracy_decimals": 0,
+        "device_class": "lock"
+    },
+    "moisture": {
+        "measurement_type": 0x20,
+        "accuracy_decimals": 0,
+        "device_class": "moisture"
+    },
+    "motion": {
+        "measurement_type": 0x21,
+        "accuracy_decimals": 0,
+        "device_class": "motion"
+    },
+    "moving": {
+        "measurement_type": 0x22,
+        "accuracy_decimals": 0,
+        "device_class": "moving"
+    },
+    "occupancy": {
+        "measurement_type": 0x23,
+        "accuracy_decimals": 0,
+        "device_class": "occupancy"
+    },
+    "plug": {
+        "measurement_type": 0x24,
+        "accuracy_decimals": 0,
+        "device_class": "plug"
+    },
+    "presence": {
+        "measurement_type": 0x25,
+        "accuracy_decimals": 0,
+        "device_class": "presence"
+    },
+    "problem": {
+        "measurement_type": 0x26,
+        "accuracy_decimals": 0,
+        "device_class": "problem"
+    },
+    "running": {
+        "measurement_type": 0x27,
+        "accuracy_decimals": 0,
+        "device_class": "running"
+    },
+    "safety": {
+        "measurement_type": 0x28,
+        "accuracy_decimals": 0,
+        "device_class": "safety"
+    },
+    "smoke": {
+        "measurement_type": 0x29,
+        "accuracy_decimals": 0,
+        "device_class": "smoke"
+    },
+    "sound": {
+        "measurement_type": 0x2a,
+        "accuracy_decimals": 0,
+        "device_class": "sound"
+    },
+    "tamper": {
+        "measurement_type": 0x2b,
+        "accuracy_decimals": 0,
+        "device_class": "tamper"
+    },
+    "vibration": {
+        "measurement_type": 0x2c,
+        "accuracy_decimals": 0,
+        "device_class": "vibration"
+    },
+    "window": {
+        "measurement_type": 0x2d,
+        "accuracy_decimals": 0,
+        "device_class": "window"
+    }
+}
 MEASUREMENT_TYPES_NUMERIC_SENSOR = {
     "packet_id": {
         "measurement_type": 0x00,
@@ -240,146 +381,5 @@ MEASUREMENT_TYPES_NUMERIC_SENSOR = {
         "measurement_type": 0x52,
         "accuracy_decimals": 3,
         "unit_of_measurement": "°/s"
-    }
-}
-MEASUREMENT_TYPES_BINARY_SENSOR = {
-    "generic_boolean": {
-        "measurement_type": 0x0f,
-        "accuracy_decimals": 0
-    },
-    "power": {
-        "measurement_type": 0x10,
-        "accuracy_decimals": 0,
-        "device_class": "power"
-    },
-    "opening": {
-        "measurement_type": 0x11,
-        "accuracy_decimals": 0,
-        "device_class": "opening"
-    },
-    "battery": {
-        "measurement_type": 0x15,
-        "accuracy_decimals": 0,
-        "device_class": "battery"
-    },
-    "battery_charging": {
-        "measurement_type": 0x16,
-        "accuracy_decimals": 0,
-        "device_class": "battery"
-    },
-    "carbon_monoxide": {
-        "measurement_type": 0x17,
-        "accuracy_decimals": 0,
-        "device_class": "carbon_monoxide"
-    },
-    "cold": {
-        "measurement_type": 0x18,
-        "accuracy_decimals": 0,
-        "device_class": "cold"
-    },
-    "connectivity": {
-        "measurement_type": 0x19,
-        "accuracy_decimals": 0,
-        "device_class": "connectivity"
-    },
-    "door": {
-        "measurement_type": 0x1a,
-        "accuracy_decimals": 0,
-        "device_class": "door"
-    },
-    "garage_door": {
-        "measurement_type": 0x1b,
-        "accuracy_decimals": 0,
-        "device_class": "garage_door"
-    },
-    "gas": {
-        "measurement_type": 0x1c,
-        "accuracy_decimals": 0,
-        "device_class": "gas"
-    },
-    "heat": {
-        "measurement_type": 0x1d,
-        "accuracy_decimals": 0,
-        "device_class": "heat"
-    },
-    "light": {
-        "measurement_type": 0x1e,
-        "accuracy_decimals": 0,
-        "device_class": "light"
-    },
-    "lock": {
-        "measurement_type": 0x1f,
-        "accuracy_decimals": 0,
-        "device_class": "lock"
-    },
-    "moisture": {
-        "measurement_type": 0x20,
-        "accuracy_decimals": 0,
-        "device_class": "moisture"
-    },
-    "motion": {
-        "measurement_type": 0x21,
-        "accuracy_decimals": 0,
-        "device_class": "motion"
-    },
-    "moving": {
-        "measurement_type": 0x22,
-        "accuracy_decimals": 0,
-        "device_class": "moving"
-    },
-    "occupancy": {
-        "measurement_type": 0x23,
-        "accuracy_decimals": 0,
-        "device_class": "occupancy"
-    },
-    "plug": {
-        "measurement_type": 0x24,
-        "accuracy_decimals": 0,
-        "device_class": "plug"
-    },
-    "presence": {
-        "measurement_type": 0x25,
-        "accuracy_decimals": 0,
-        "device_class": "presence"
-    },
-    "problem": {
-        "measurement_type": 0x26,
-        "accuracy_decimals": 0,
-        "device_class": "problem"
-    },
-    "running": {
-        "measurement_type": 0x27,
-        "accuracy_decimals": 0,
-        "device_class": "running"
-    },
-    "safety": {
-        "measurement_type": 0x28,
-        "accuracy_decimals": 0,
-        "device_class": "safety"
-    },
-    "smoke": {
-        "measurement_type": 0x29,
-        "accuracy_decimals": 0,
-        "device_class": "smoke"
-    },
-    "sound": {
-        "measurement_type": 0x2a,
-        "accuracy_decimals": 0,
-        "device_class": "sound"
-    },
-    "tamper": {
-        "measurement_type": 0x2b,
-        "accuracy_decimals": 0,
-        "device_class": "tamper"
-    },
-    "vibration": {
-        "measurement_type": 0x2c,
-        "accuracy_decimals": 0,
-        "device_class": "vibration"
-    },
-    "window": {
-        "measurement_type": 0x2d,
-        "accuracy_decimals": 0,
-        "device_class": "window"
     }
 }

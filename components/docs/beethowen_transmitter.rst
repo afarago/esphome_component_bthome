@@ -153,6 +153,8 @@ Configuration variables:
 
 - **measurement_type** (*Required*, int **or** string): Measurement type as defined in 
   `BTHome format specification <https://bthome.io/format>`__ either as a string or a numeric value.
+    
+  Measurement type `further details <bthome_common_format.rst>`__ to be taken into account.
 
 - **sensor_id** (*Required*, string): A sensor that is defined in the configuration. Its value will 
   be retrieved and proxied through the beethowen channel.

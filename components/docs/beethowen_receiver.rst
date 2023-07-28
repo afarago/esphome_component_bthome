@@ -171,6 +171,8 @@ To initialize a sensor, first supply ``mac_address`` to identify the remote Beet
             unit_of_measurement: °C
 
 
+.. _bthome_common_format: :doc:`./bthome_common_format.rst`
+
 .. _config-beethowen-sensor:
 
 Configuration variables:
@@ -186,6 +188,8 @@ Configuration variables:
     `BTHome format specification <https://bthome.io/format>`__ either as a string or a numeric value. 
     If selected by name (string) the accuracy and unit of measurement are automatically defaulted to 
     the correct values.
+    
+    Measurement type `further details <bthome_common_format.rst>`__ to be taken into account.
 
 See Also
 --------
