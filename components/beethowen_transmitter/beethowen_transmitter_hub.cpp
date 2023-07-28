@@ -225,7 +225,7 @@ namespace esphome
                encoder.get_count());
       if (success)
         this->on_send_finished_callback_.call(has_outstanding_measurements);
-      if (success)
+      else
         this->on_send_failed_callback_.call();
 
       this->last_send_millis_ = millis();
