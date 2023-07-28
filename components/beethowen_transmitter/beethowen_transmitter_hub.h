@@ -16,6 +16,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/bthome_base/bthome_base_common.h"
+#include "esphome/components/bthome_base/bthome_encoder.h"
 
 namespace esphome
 {
@@ -111,6 +112,7 @@ namespace esphome
       bool restore_from_flash_{true};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
+      bthome_base::BTHomeEncoder encoder{MAX_BEETHOWEN_PAYLOAD_LENGTH};
 
       ESPPreferenceObject prefs_state_;
       ESPPreferenceObject prefs_packetid_state_;

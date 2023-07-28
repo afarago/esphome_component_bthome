@@ -58,10 +58,13 @@ namespace beethowen_base
 		// ESP_LOGD("custom", "meshRC send {size}:%d", size);
 		if (esp_now_is_init)
 		{
+			uint8_t *addr = dest ? dest : broadcast;
 #if defined(USE_ESP8266)
 			success = esp_now_send(dest ? dest : broadcast, data, size) == OK;
+			if (!esp_now_is_peer_exist(addr))
+				addPeer(addr);
+
 #elif defined(USE_ESP32)
-			uint8_t *addr = dest ? dest : broadcast;
 			if (!esp_now_is_peer_exist(addr))
 				addPeer(addr);
 

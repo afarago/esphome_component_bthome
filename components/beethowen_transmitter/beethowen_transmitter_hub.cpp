@@ -154,7 +154,6 @@ namespace esphome
 
     bool BeethowenTransmitterHub::send(bool complete_only)
     {
-      bthome_base::BTHomeEncoder encoder(MAX_BEETHOWEN_PAYLOAD_LENGTH);
       encoder.resetMeasurement();
 
       // add the packet id as first measurement
@@ -218,6 +217,7 @@ namespace esphome
         server_found_ = false;                     // invalidate server found
         initial_server_checkin_completed_ = false; // but first try it again on the last used channel
       }
+      // idea: consider only doing a repeated search when failing for x times... //!!
 
       ESP_LOGD(TAG, "Sending finished {success} %d, {has_outstanding_measurements} %d, {count} %d",
                success,
