@@ -106,22 +106,24 @@ BTHOME_ICONS = {
 
 
 def find_matching_device_class(object_id, measurement_property, main_type):
-    # for _, measurement_property in enumerate(
-    #     bthome_base.const_generated.MEASUREMENT_TYPES_NUMERIC_SENSOR
-    # ):
-    matching_classes = [
+    matching_classes = ([
         value
         for value in DEVICE_CLASS_BASIC[main_type]
         if value != sensor.DEVICE_CLASS_EMPTY and measurement_property.startswith(value)
-    ] + [
+    ] if main_type in DEVICE_CLASS_BASIC else []) + ([
         value
         for _, (key, value) in enumerate(DEVICE_CLASS_HELPER[main_type].items())
         if measurement_property.startswith(key)
-    ]
-    device_class_picked = matching_classes[0] if len(matching_classes) else None
+    ] if main_type in DEVICE_CLASS_HELPER else [])
+
+    device_class_picked = matching_classes[0] if len(
+        matching_classes) else None
     # print(f"{measurement_property:>40} = {device_class_picked}")
     return device_class_picked
 
 
 def find_matching_icon(object_id, measurement_property, main_type):
     return BTHOME_ICONS[object_id]
+
+def msb(val):
+    return int(hex(val)[2:4],16)

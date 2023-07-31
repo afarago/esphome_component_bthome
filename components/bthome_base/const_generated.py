@@ -307,7 +307,7 @@ MEASUREMENT_TYPES_NUMERIC_SENSOR = {
         "unit_of_measurement": "°C",
         "device_class": "temperature"
     },
-    "UV_index": {
+    "uv_index": {
         "measurement_type": 0x46,
         "accuracy_decimals": 1,
         "unit_of_measurement": ""
@@ -324,7 +324,7 @@ MEASUREMENT_TYPES_NUMERIC_SENSOR = {
         "unit_of_measurement": "mL",
         "device_class": "volume"
     },
-    "volume_Flow_Rate": {
+    "volume_flow_rate": {
         "measurement_type": 0x49,
         "accuracy_decimals": 3,
         "unit_of_measurement": "m3/hr",

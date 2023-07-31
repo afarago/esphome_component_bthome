@@ -27,22 +27,20 @@ import helpers
 #         self.unit = unit
 # bti = BTHomeType(0x00, "packet id", "uint8 (1 byte)", "1", "9", "9", "")
 
-gcontext = ssl.SSLContext()
-page = urllib.request.urlopen(
-    "http://bthome.io/format/",
-    context=gcontext,
-)
+ssl._create_default_https_context = ssl._create_unverified_context
+page = urllib.request.urlopen("http://bthome.io/format/")
 page_content = page.read()
-TARGET_DIR = "../components/bthome_base/"
+TARGET_DIR = "../components/"
+TARGET_BTHOMEBASE_DIR = TARGET_DIR + "/bthome_base/"
+TARGET_DOC_DIR = TARGET_DIR + "/docs/"
 
 soup = BeautifulSoup(page_content, "html.parser")
 tables = soup.find_all("table")
 
-# main_types = ["numeric", "binary", None, "numeric"]
 main_types = [
     "numeric",  # Object id	Property	Data type	Factor	Example	Result	Unit
     "binary",  # Object id	Property	Data type
-    None,  # "event_binary",  # Object id	Device type	Event id	Event type	Event property
+    "event_binary",  # Object id	Device type	Event id	Event type	Event property
     "numeric",  # Object id	Property	Data Type
 ]  # main types in sections within bthome.io/format page
 
@@ -74,31 +72,31 @@ for imain in range(4):
                     re.search("\((\d+)", data_type).group(1))
             except:
                 pass
-        # elif main_type == "event_binary":
-        #     if object_id_raw == "":
-        #         object_id_raw = row[0] = lastrow[0]
-        #         property = row[1] = lastrow[1]
-        #         event_is_subevent = True
-        #     event_id = row[2]
-        #     event_type = row[3] if row[3] != "None" else None
-        #     unit_of_measurement = row[4].replace("#", "").replace(" ", "")
+        elif main_type == "event_binary":
+            if object_id_raw == "":  # not the first row - object_id is empty
+                object_id_raw = row[0] = lastrow[0]
+                property = row[1] = lastrow[1]
+                event_id = row[2]
+                object_id_raw = object_id_raw + event_id.replace("0x", "")
+                event_type = row[3].lower()  # if row[3] != "None" else None
+                property = f"{property}_ext_{event_type}"
+                # event_is_subevent = True
+            else:
+                property = f"{property}"
+            unit_of_measurement = row[4].replace("#", "").replace(" ", "")
 
-        #     example_len = (int)(len(row[5].strip()) / 2)
-        #     data_type_length = example_len - 1
-        #     data_type = f"uint8 ({data_type_length} byte)"
+            example_len = (int)(len(row[5].strip()) / 2)
+            data_type_length = example_len - 1
+            data_type = f"uint8 ({data_type_length} byte)"
 
-        #     if event_is_subevent:
-        #         object_id_raw = object_id_raw + event_id.replace("0x", "")
-
-        #     property = f"{property}_{event_type}" if event_type else property
-        #     data_type_signed = False
-        #     data_type_length = 1
+            data_type_signed = False
         else:
             print("ERROR 1a", main_type)
             continue
 
         object_id = int(object_id_raw, 16)
-        # print(object_id_raw,object_id)
+        object_id_firstbyte = helpers.msb(object_id)
+        # print(object_id_raw, object_id)
 
         # sanitize property
         property = (
@@ -106,6 +104,7 @@ for imain in range(4):
             .replace(".", "_")
             .replace("(", "")
             .replace(")", "")
+            .lower()
         )
 
         if main_type == "numeric":
@@ -113,13 +112,11 @@ for imain in range(4):
                 factor = float(row[3])
             except:
                 pass
-        accuracy_decimals = int(abs(math.log10(factor)))
-
-        if main_type == "numeric":
             try:
                 unit_of_measurement = row[6]
             except:
                 pass
+        accuracy_decimals = int(abs(math.log10(factor)))
 
         # generate decode key: DataLen 123 bits | DataType 45 bits | Factor 67 bits
         decode_datatype_key = (
@@ -137,7 +134,8 @@ for imain in range(4):
             "data_type_signed": data_type_signed,
             "data_type_length": data_type_length,
             "measurement_type": object_id,
-            "measurement_type_hex": object_id_raw,
+            # object_id_raw
+            "measurement_type_hex": ("0x"+format(object_id_firstbyte, "02x")),
             "accuracy_decimals": accuracy_decimals,
             "unit_of_measurement": unit_of_measurement,
             "device_class": helpers.find_matching_device_class(
@@ -152,7 +150,7 @@ for imain in range(4):
         lastrow = row
 
 # print(list(data[0].values())[0])
-data.sort(key=lambda x: x["measurement_type"])
+data = sorted(data, key=lambda x: helpers.msb(x["measurement_type"]))
 
 #
 # Duplicates: find and rename duplicates
@@ -160,12 +158,6 @@ data.sort(key=lambda x: x["measurement_type"])
 
 differentiator_dictionary = {
     "unit_of_measurement": None,
-    # "accuracy_decimals": [
-    #     None,
-    #     "to_deci",
-    #     "to_centi",
-    #     "to_milli",
-    # ],
     "accuracy_decimals": {-1: "coarse", 0: "None", +1: "precise"},
     "data_type_length": [0, 1, 2, 3, 4],
 }
@@ -246,15 +238,15 @@ for index, item in enumerate(data):
 
                 # ###
                 # accuracy_decimal: default/first elem should not get extension, yet others should receive coarse/precise
-                min_value = min([item["measurement_type"]
-                                for item in alike_list])
-                if min_value == item["measurement_type"]:
-                    base_accuracy_at = item
-                    # differentiator = list(differentiator_candidates)[cindex]
-                    # print(
-                    #     f"   skip:1b value:{meas_value} min_value:{min_value} differentiator:{differentiator}"
-                    # )
-                    continue
+                # min_value = min([item["measurement_type"]
+                #                 for item in alike_list])
+                # if min_value == item["measurement_type"]:
+                #     base_accuracy_at = item
+                #     # differentiator = list(differentiator_candidates)[cindex]
+                #     # print(
+                #     #     f"   skip:1b value:{meas_value} min_value:{min_value} differentiator:{differentiator}"
+                #     # )
+                #     continue
 
                 # # not all are different - but this one is unique of the set (e.g. volume_ml) - we use this and skip
                 # count_of_this = sum(
@@ -298,11 +290,17 @@ for index, item in enumerate(data):
             # print(f"    retval:{retval}")
             return retval
 
-        for item in alike_list:
-            item["property_unique"] += append_diff(item)
-            # print(
-            #     f"   {item['measurement_type_hex']}: {item['property']} - {item['property_unique']}"
-            # )
+        # find first element of alike list
+        min_value = min([item["measurement_type"] for item in alike_list])
+        for item1 in alike_list:
+            if item1["measurement_type"] == min_value:
+                base_accuracy_at = item1
+                break
+
+        # rename all alike except base
+        for item1 in alike_list:
+            if base_accuracy_at != item1:
+                item1["property_unique"] += append_diff(item1)
 
 # for item in data:
 #     print(item["property_unique"])
@@ -312,7 +310,7 @@ for index, item in enumerate(data):
 
 def create_bthome_common_generated(data):
 
-    fname = TARGET_DIR + "bthome_common_generated.h"
+    fname = TARGET_BTHOMEBASE_DIR + "bthome_common_generated.h"
     print(f"generating {fname}...")
     f = open(fname, "w", encoding="utf-8")
     f.write("""
@@ -335,8 +333,8 @@ namespace bthome_base
                 extension = "VALUE"
             elif item["main_type"] == "binary":
                 extension = "STATE"
-            # elif item["main_type"] == "event_binary":
-            #     extension = "EVENT"
+            elif item["main_type"] == "event_binary":
+                extension = "EVENT"
             else:
                 extension = "__"
             values.append(
@@ -353,7 +351,7 @@ namespace bthome_base
         values = []
         maxvalue = max(
             # [item["measurement_type"] for item in data if not item["event_is_subevent"]]
-            [item["measurement_type"] for item in data]
+            [helpers.msb(item["measurement_type"]) for item in data]
         )
         for measurement_type in range(maxvalue):
             item = None
@@ -423,12 +421,15 @@ def create_const_generated(data):
 
         return retval
 
-    fname = TARGET_DIR + "const_generated.py"
+    fname = TARGET_BTHOMEBASE_DIR + "const_generated.py"
     print(f"generating {fname}...")
     f = open(fname, "w", encoding="utf-8")
 
-    for imain in set(main_types):
+    main_types_unique = sorted(imain for imain in set(main_types) if imain)
+    for imain in main_types_unique:
         if imain is None:
+            continue
+        if imain == "event_binary":
             continue
 
         f.write(f"MEASUREMENT_TYPES_{imain.upper()}_SENSOR = ")
@@ -452,7 +453,7 @@ def dump_types_for_doc(data):
     def gen_header(achar, asepchar, data_columns):
         return asepchar.join([achar*(col_length)]*(len(data_columns))) + "\n"
 
-    fname = "../components/docs/" + "bthome_common_format_generated.rst"
+    fname = TARGET_DOC_DIR + "bthome_common_format_generated.rst"
     print(f"generating {fname}...")
     f = open(fname, "w", encoding="utf-8")
 
