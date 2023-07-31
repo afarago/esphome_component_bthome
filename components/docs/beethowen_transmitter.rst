@@ -89,7 +89,7 @@ Configuration variables:
 
 - **connect_persistent** (*Optional*, boolean): ESP8266 is able to reconnect to the last used Wi-Fi network or establishes the same Access Point upon power up or reset. By default, these settings are NOT written to specific sectors of flash memory every time they are changed. Frequently calling these functions could cause wear on the flash memory. See `WiFi library <https://arduino-esp8266.readthedocs.io/en/2.5.2/esp8266wifi/generic-class.html#persistent>`_ reference.
 
-- **sensors** (*Optional*): Specify sensors to proxy through the beethowen channel. See :ref:`Proxy Sensors <beethowen-sensor_>` for more information.
+- **sensors** (*Optional*): Specify sensors to proxy through the beethowen channel. See :ref:`Proxy Sensors <beethowen-sensor>` for more information.
 
 - **auto_send** (*Optional*, boolean): Regularly check all connected sensors and once all provide a valid state automatically send data.
 
@@ -130,7 +130,7 @@ Proposed scenario is as follows:
 
 
 
-.. _bthome-sensor:
+.. _beethowen-sensor:
 
 Sensor
 ------

@@ -35,4 +35,4 @@ Both transmitter and receiver should list the sensors in the correct order. Tran
 List of Measurement Types
 -------------------------
 
-.. include:: bthome_common_format_generated.rst
+.. include:: ./bthome_common_format_generated.rst
