@@ -66,22 +66,23 @@ namespace esphome
       };
 
       inline void set_connect_persistent(bool value) { connect_persistent_ = value; };
-      inline void set_auto_send(bool value) { auto_send_ = value; };
+      inline void set_auto_send(bool value) { auto_send_data_ = value; };
       inline void set_local_passkey(uint16_t value) { local_passkey_ = value; };
       inline void set_remote_expected_passkey(uint16_t value) { remote_expected_passkey_ = value; };
       inline void set_restore_from_flash(bool value) { restore_from_flash_ = value; }
 
       void setup() override;
       void update() override;
-      // void loop() override;
+      void loop() override;
 
       float get_setup_priority() const override { return setup_priority::DATA; }
 
       void add_sensor(uint8_t measurement_type, sensor::Sensor *sensor);
       void add_sensor(uint8_t measurement_type, binary_sensor::BinarySensor *binary_sensor);
 
-      bool send(bool complete_only = false);
+      bool send_data(bool complete_only = false);
 
+      void add_on_send_started_callback(std::function<void()> callback) { this->on_send_started_callback_.add(std::move(callback)); }
       void add_on_send_finished_callback(std::function<void(bool)> callback) { this->on_send_finished_callback_.add(std::move(callback)); }
       void add_on_send_failed_callback(std::function<void()> callback) { this->on_send_failed_callback_.add(std::move(callback)); }
 
@@ -90,14 +91,16 @@ namespace esphome
       bool is_server_found() { return this->server_found_; }
       void connect_to_wifi(uint8_t channel, bool persistent);
       void reinit_server_after_set();
-      void sensor_has_updated(const BTHomeTypedSensor sobj) { this->check_auto_send(); }
-      void check_auto_send();
+      void sensor_has_updated(const BTHomeTypedSensor sobj) { this->check_auto_send_data(); }
+      void check_auto_send_data();
+      void send_data_loop();
 
       void restore_state_();
       void save_state_(server_address_and_channel_t server_address_and_channel);
       void restore_packetid_state_rtc_();
       void save_packetid_state_rtc_(uint8_t packet_id);
 
+      CallbackManager<void()> on_send_started_callback_;
       CallbackManager<void(bool)> on_send_finished_callback_;
       CallbackManager<void()> on_send_failed_callback_;
 
@@ -108,8 +111,9 @@ namespace esphome
       bool server_found_{false};
       bool initial_server_checkin_completed_{false};
       bool connect_persistent_{false};
-      bool auto_send_{false};
+      bool auto_send_data_{false};
       bool restore_from_flash_{true};
+      bool send_data_awaiting_{false};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
       bthome_base::BTHomeEncoder encoder{MAX_BEETHOWEN_PAYLOAD_LENGTH};

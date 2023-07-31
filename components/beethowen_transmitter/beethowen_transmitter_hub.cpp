@@ -96,18 +96,23 @@ namespace esphome
       }
       break;
 
-        case beethowen_base::BeethowenCommand_DataAck:
-        {
-          beethowen_base::beethowen_command_data_ack_t *buffer2 = (beethowen_base::beethowen_command_data_ack_t *)buffer;
-          ESP_LOGD(TAG, "Data packet ACKed %d", buffer2->packet_id_acked);
-          this->last_packet_id_acked = buffer2->packet_id_acked;
-        }
-        break;
+      case beethowen_base::BeethowenCommand_DataAck:
+      {
+        beethowen_base::beethowen_command_data_ack_t *buffer2 = (beethowen_base::beethowen_command_data_ack_t *)buffer;
+        ESP_LOGD(TAG, "Data packet ACKed %d", buffer2->packet_id_acked);
+        this->last_packet_id_acked = buffer2->packet_id_acked;
+      }
+      break;
 
       default:
         ESP_LOGW(TAG, "Unknown command type 0x%02x", command);
         break;
       }
+    }
+
+    void BeethowenTransmitterHub::loop()
+    {
+      this->send_data_loop();
     }
 
     void BeethowenTransmitterHub::update()
@@ -132,7 +137,7 @@ namespace esphome
       }
       else
       {
-        this->check_auto_send();
+        this->check_auto_send_data();
       }
     }
 
@@ -152,49 +157,66 @@ namespace esphome
       beethowen_base::begin(false);
     }
 
-    bool BeethowenTransmitterHub::send(bool complete_only)
+    bool BeethowenTransmitterHub::send_data(bool complete_only)
     {
-      encoder.resetMeasurement();
-
-      // add the packet id as first measurement
-      encoder.addMeasurementValue(bthome_base::BTHOME_PACKET_ID_VALUE, this->send_packet_id_);
-
-      // collect data
-      bool has_outstanding_measurements = false;
-      bool has_meaningful_measurements = false;
-      for (auto btsensor_struct : my_sensors)
+      bool success = false;
+      if (this->is_server_found())
       {
-        // ESP_LOGD(TAG, ".send {measurement_type} %d, {has_sensor_state} %d", btsensor_struct.measurement_type, has_sensor_state(btsensor_struct));
-        if (has_sensor_state(btsensor_struct))
+        encoder.resetMeasurement();
+
+        // add the packet id as first measurement
+        encoder.addMeasurementValue(bthome_base::BTHOME_PACKET_ID_VALUE, this->send_packet_id_);
+
+        // collect data
+        bool has_outstanding_measurements = false;
+        bool has_meaningful_measurements = false;
+        for (auto btsensor_struct : my_sensors)
         {
-          if (is_sensor_binary(btsensor_struct))
-            encoder.addMeasurementState(btsensor_struct.measurement_type, get_sensor_binarystate(btsensor_struct).value());
+          // ESP_LOGD(TAG, ".send {measurement_type} %d, {has_sensor_state} %d", btsensor_struct.measurement_type, has_sensor_state(btsensor_struct));
+          if (has_sensor_state(btsensor_struct))
+          {
+            if (is_sensor_binary(btsensor_struct))
+              encoder.addMeasurementState(btsensor_struct.measurement_type, get_sensor_binarystate(btsensor_struct).value());
+            else
+              encoder.addMeasurementValue(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
+            has_meaningful_measurements = true;
+          }
           else
-            encoder.addMeasurementValue(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
-          has_meaningful_measurements = true;
+          {
+            has_outstanding_measurements = true;
+          }
         }
-        else
+        if (complete_only && has_outstanding_measurements)
+          return false;
+
+        // TODO: after an outgoing send invalidate somehow -- cache all data and wait for another cycle, or wait at least 1 sec // or what
+        // ESP_LOGD(TAG, "send {do_complete_send} %d, {has_outstanding_measurements} %d", do_complete_send, has_outstanding_measurements);
+
+        // perform send only if there is anything to send
+        if (has_meaningful_measurements)
         {
-          has_outstanding_measurements = true;
+          // assemble the packet
+          uint8_t *bthome_data;
+          uint8_t bthome_data_len;
+          encoder.buildPaket(bthome_data, bthome_data_len);
+
+          this->on_send_started_callback_.call();
+          beethowen_base::send_command_data(get_server_address_arr(), local_passkey_, bthome_data, bthome_data_len);
+          this->send_data_awaiting_ = true;
         }
       }
-      if (complete_only && has_outstanding_measurements)
-        return false;
 
-      // TODO: after an outgoing send invalidate somehow -- cache all data and wait for another cycle, or wait at least 1 sec // or what
-      // ESP_LOGD(TAG, "send {do_complete_send} %d, {has_outstanding_measurements} %d", do_complete_send, has_outstanding_measurements);
+      return success;
+    }
 
-      // perform send only if there is anything to send
-      bool success = false;
-      if (has_meaningful_measurements)
+    void BeethowenTransmitterHub::send_data_loop()
+    {
+      // loop - if send awaited and finished
+      if (this->is_server_found() && this->send_data_awaiting_ && !beethowen_base::sending)
       {
-        // assemble the packet
-        uint8_t *bthome_data;
-        uint8_t bthome_data_len;
-        encoder.buildPaket(bthome_data, bthome_data_len);
-
-        if (beethowen_base::send_command_data(get_server_address_arr(), local_passkey_, bthome_data, bthome_data_len))
-          beethowen_base::wait();
+        this->send_data_awaiting_ = false;
+        this->save_packetid_state_rtc_(++this->send_packet_id_);
+        bool success = beethowen_base::sending_success;
 
         // auto dataAckOption = this->get_wait_data_ack_option();
         // if (dataAckOption != nullptr)
@@ -206,30 +228,25 @@ namespace esphome
         //     yield();
         // }
 
-        this->save_packetid_state_rtc_(++this->send_packet_id_);
+        if (!success)
+        {
+          ESP_LOGD(TAG, "ESPNow send failed, resetting server_found.");
+          server_found_ = false;                     // invalidate server found
+          initial_server_checkin_completed_ = false; // but first try it again on the last used channel
+        }
 
-        success = beethowen_base::sending_success;
+        int count = encoder.get_count();
+        bool has_outstanding_measurements = my_sensors.size() == count;
+        ESP_LOGD(TAG, "Sending finished {success} %d, {has_outstanding_measurements} %d, {count} %d",
+                 success, has_outstanding_measurements, count);
+
+        if (success)
+          this->on_send_finished_callback_.call(has_outstanding_measurements);
+        else
+          this->on_send_failed_callback_.call();
+
+        this->last_send_millis_ = millis();
       }
-
-      if (!success)
-      {
-        ESP_LOGD(TAG, "ESPNow send failed, resetting server_found.");
-        server_found_ = false;                     // invalidate server found
-        initial_server_checkin_completed_ = false; // but first try it again on the last used channel
-      }
-      // idea: consider only doing a repeated search when failing for x times... //!!
-
-      ESP_LOGD(TAG, "Sending finished {success} %d, {has_outstanding_measurements} %d, {count} %d",
-               success,
-               has_outstanding_measurements,
-               encoder.get_count());
-      if (success)
-        this->on_send_finished_callback_.call(has_outstanding_measurements);
-      else
-        this->on_send_failed_callback_.call();
-
-      this->last_send_millis_ = millis();
-      return success;
     }
 
     void BeethowenTransmitterHub::restore_state_()
@@ -258,13 +275,13 @@ namespace esphome
         ESP_LOGW(TAG, "Failed to save packetid state");
     }
 
-    void BeethowenTransmitterHub::check_auto_send()
+    void BeethowenTransmitterHub::check_auto_send_data()
     {
       // ESP_LOGD(TAG, "update {auto_send_} %d, {auto_send_done_} %d, {server_channel_} %d, ", auto_send_, auto_send_done_, server_channel_);
-      if (is_server_found() && this->auto_send_ &&
+      if (is_server_found() && this->auto_send_data_ &&
           (!this->last_send_millis_ || (millis() - this->last_send_millis_ > BEETHOWEN_MINIMUM_TIMEOUT_AUTO_SEND)))
       {
-        if (this->send(true))
+        if (this->send_data(true))
           this->last_send_millis_ = millis();
       }
     }

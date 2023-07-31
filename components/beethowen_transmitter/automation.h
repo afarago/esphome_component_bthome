@@ -18,6 +18,15 @@ namespace esphome
 {
   namespace beethowen_transmitter
   {
+    class SendStartedTrigger : public Trigger<>
+    {
+    public:
+      explicit SendStartedTrigger(BeethowenTransmitterHub *parent)
+      {
+        parent->add_on_send_started_callback([this]()
+                                             { this->trigger(); });
+      }
+    };
     class SendFinishedTrigger : public Trigger<bool>
     {
     public:
@@ -43,7 +52,7 @@ namespace esphome
     public:
       explicit SendAction(BeethowenTransmitterHub *hub) : hub_(hub) {}
 
-      void play(Ts... x) override { this->hub_->send(this->complete_only_); }
+      void play(Ts... x) override { this->hub_->send_data(this->complete_only_); }
 
       void set_complete_only(bool value) { this->complete_only_ = value; }
 

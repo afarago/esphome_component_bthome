@@ -27,6 +27,7 @@ CONF_AUTO_SEND = "auto_send"
 CONF_LOCAL_PASSKEY = "local_passkey"
 CONF_EXPECTED_REMOTE_PASSKEY = "expected_remote_passkey"
 CONF_SENSOR_SENSOR_ID = "sensor_id"
+CONF_ON_SEND_STARTED = "on_send_started"
 CONF_ON_SEND_FINISHED = "on_send_finished"
 CONF_ON_SEND_FAILED = "on_send_failed"
 CONF_RESTORE_FROM_FLASH = "restore_from_flash"
@@ -34,7 +35,8 @@ CONF_COMPLETE_ONLY = "complete_only"  # for send action
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = []
-AUTO_LOAD = ["bthome_base", "beethowen_base", "binary_sensor", "sensor", "preferences"]
+AUTO_LOAD = ["bthome_base", "beethowen_base",
+             "binary_sensor", "sensor", "preferences"]
 
 beethowen_transmitter_ns = cg.esphome_ns.namespace("beethowen_transmitter")
 BeethowenTransmitterHub = beethowen_transmitter_ns.class_(
@@ -45,6 +47,9 @@ BeethowenTransmitterSensor = beethowen_transmitter_ns.class_(
 )
 BeethowenTransmitterBinarySensor = beethowen_transmitter_ns.class_(
     "BeethowenTransmitterBinarySensor", cg.Component, binary_sensor.BinarySensor
+)
+SendStartedTrigger = beethowen_transmitter_ns.class_(
+    "SendStartedTrigger", automation.Trigger.template()
 )
 SendFinishedTrigger = beethowen_transmitter_ns.class_(
     "SendFinishedTrigger", automation.Trigger.template(bool)
@@ -94,6 +99,11 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_RESTORE_FROM_FLASH, default=True): cv.boolean,
             cv.Optional(CONF_LOCAL_PASSKEY): cv.hex_uint16_t,
             cv.Optional(CONF_EXPECTED_REMOTE_PASSKEY): cv.hex_uint16_t,
+            cv.Optional(CONF_ON_SEND_STARTED): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SendStartedTrigger),
+                }
+            ),
             cv.Optional(CONF_ON_SEND_FINISHED): automation.validate_automation(
                 {
                     cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SendFinishedTrigger),
@@ -190,6 +200,9 @@ async def to_code(config):
 
         cg.add(var.add_sensor(HexInt(measurement_type), sensor))
 
+    for conf in config.get(CONF_ON_SEND_STARTED, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(trigger, [], conf)
     for conf in config.get(CONF_ON_SEND_FINISHED, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(
@@ -210,7 +223,6 @@ async def to_code(config):
         }
     ),
 )
-
 async def beethowen_transmitter_send_to_code(config, action_id, template_arg, args):
     paren = await cg.get_variable(config[CONF_ID])
     var = cg.new_Pvariable(action_id, template_arg, paren)
