@@ -1,5 +1,5 @@
 from esphome.const import (
-    #### non-binary
+    # non-binary
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_AQI,
     DEVICE_CLASS_BATTERY,
@@ -27,7 +27,7 @@ from esphome.const import (
     DEVICE_CLASS_TIMESTAMP,
     DEVICE_CLASS_VOLATILE_ORGANIC_COMPOUNDS,
     DEVICE_CLASS_VOLTAGE,
-    #### binary
+    # binary
     DEVICE_CLASS_EMPTY,
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_GAS,
@@ -61,4 +61,5 @@ from esphome.const import (
 from .const_generated import (
     MEASUREMENT_TYPES_NUMERIC_SENSOR,
     MEASUREMENT_TYPES_BINARY_SENSOR,
+    MEASUREMENT_TYPES_EVENT_SENSOR
 )

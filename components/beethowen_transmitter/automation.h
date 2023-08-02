@@ -47,10 +47,10 @@ namespace esphome
     };
 
     template <typename... Ts>
-    class SendAction : public Action<Ts...>
+    class SendDataAction : public Action<Ts...>
     {
     public:
-      explicit SendAction(BeethowenTransmitterHub *hub) : hub_(hub) {}
+      explicit SendDataAction(BeethowenTransmitterHub *hub) : hub_(hub) {}
 
       void play(Ts... x) override { this->hub_->send_data(this->complete_only_); }
 
@@ -61,6 +61,27 @@ namespace esphome
 
     private:
       bool complete_only_{true};
+    };
+
+    template <typename... Ts>
+    class SendEventAction : public Action<Ts...>
+    {
+    public:
+      explicit SendEventAction(BeethowenTransmitterHub *hub) : hub_(hub) {}
+
+      void play(Ts... x) override { this->hub_->send_event(this->device_type_, this->event_type_, this->value_); }
+
+      void set_device_type(bool value) { this->device_type_ = value; }
+      void set_event_type(bool value) { this->event_type_ = value; }
+      void set_value(bool value) { this->value_ = value; }
+
+    protected:
+      BeethowenTransmitterHub *hub_;
+
+    private:
+      uint8_t device_type_{0x00};
+      uint8_t event_type_{0x00};
+      uint8_t value_{0x00};
     };
 
   }

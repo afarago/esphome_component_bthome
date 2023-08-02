@@ -125,5 +125,14 @@ def find_matching_device_class(object_id, measurement_property, main_type):
 def find_matching_icon(object_id, measurement_property, main_type):
     return BTHOME_ICONS[object_id]
 
+
 def msb(val):
-    return int(hex(val)[2:4],16)
+    return int(hex(val)[2:4], 16)
+
+
+def lsb(val):
+    return val & 0xff
+
+
+def hex2(value, length: int | None = None):
+    return format(value, f'#0{length+2 if length else length}x')

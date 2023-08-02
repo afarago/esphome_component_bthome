@@ -27,16 +27,24 @@ namespace esphome
     typedef uint64_t server_address_and_channel_t;
     typedef struct
     {
-      uint8_t measurement_type;
+      bthome_base::bthome_measurement_t measurement_type;
       sensor::Sensor *sensor;
       binary_sensor::BinarySensor *binary_sensor;
     } BTHomeTypedSensor;
+
+    typedef struct __attribute__((packed))
+    {
+      bthome_base::bthome_measurement_t measurement_type;
+      uint8_t event_type;
+      uint8_t steps;
+    } BTHomeEventRecord;
 
     class BeethowenTransmitterHub : public PollingComponent
     {
     public:
 #define BEETHOWEN_TAKT_TIME 300
 #define BEETHOWEN_MINIMUM_TIMEOUT_AUTO_SEND (10 * 1000)
+#define BEETHOWEN_MAX_EVENT_QUEUE_LEN 5
       BeethowenTransmitterHub() : PollingComponent(BEETHOWEN_TAKT_TIME)
       {
       }
@@ -77,10 +85,11 @@ namespace esphome
 
       float get_setup_priority() const override { return setup_priority::DATA; }
 
-      void add_sensor(uint8_t measurement_type, sensor::Sensor *sensor);
-      void add_sensor(uint8_t measurement_type, binary_sensor::BinarySensor *binary_sensor);
+      void add_sensor(bthome_base::bthome_measurement_t measurement_type, sensor::Sensor *sensor);
+      void add_sensor(bthome_base::bthome_measurement_t measurement_type, binary_sensor::BinarySensor *binary_sensor);
 
       bool send_data(bool complete_only = false);
+      bool send_event(bthome_measurement_t device_type, uint8_t event_type, uint8_t value = 0);
 
       void add_on_send_started_callback(std::function<void()> callback) { this->on_send_started_callback_.add(std::move(callback)); }
       void add_on_send_finished_callback(std::function<void(bool)> callback) { this->on_send_finished_callback_.add(std::move(callback)); }
@@ -93,7 +102,8 @@ namespace esphome
       void reinit_server_after_set();
       void sensor_has_updated(const BTHomeTypedSensor sobj) { this->check_auto_send_data(); }
       void check_auto_send_data();
-      void send_data_loop();
+      void send_datacmd_loop();
+      bool send_datacmd_(optional<bool> add_complete_data, bool add_events);
 
       void restore_state_();
       void save_state_(server_address_and_channel_t server_address_and_channel);
@@ -113,9 +123,12 @@ namespace esphome
       bool connect_persistent_{false};
       bool auto_send_data_{false};
       bool restore_from_flash_{true};
-      bool send_data_awaiting_{false};
+      bool send_datacmd_awaiting_{false};
+      uint8_t send_datacmd_awaiting_events_{0};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
+      std::vector<BTHomeEventRecord> queued_events_;
+      std::vector<BTHomeTypedSensor> my_sensors_;
       bthome_base::BTHomeEncoder encoder{MAX_BEETHOWEN_PAYLOAD_LENGTH};
 
       ESPPreferenceObject prefs_state_;
@@ -156,8 +169,6 @@ namespace esphome
           return sensor_struct.binary_sensor->state;
         return nullopt;
       }
-
-      std::vector<BTHomeTypedSensor> my_sensors;
     };
 
   }

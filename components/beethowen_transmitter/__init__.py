@@ -17,6 +17,7 @@ from esphome.core import CORE, HexInt, coroutine_with_priority
 from esphome.components.bthome_base.const import (
     MEASUREMENT_TYPES_NUMERIC_SENSOR,
     MEASUREMENT_TYPES_BINARY_SENSOR,
+    MEASUREMENT_TYPES_EVENT_SENSOR
 )
 
 CONF_BeethowenTransmitterHub_ID = "BeethowenTransmitterHub_ID"
@@ -32,6 +33,12 @@ CONF_ON_SEND_FINISHED = "on_send_finished"
 CONF_ON_SEND_FAILED = "on_send_failed"
 CONF_RESTORE_FROM_FLASH = "restore_from_flash"
 CONF_COMPLETE_ONLY = "complete_only"  # for send action
+CONF_HAS_OUTSTANDING_MEASUREMENTS = "has_outstanding_measurements"
+CONF_DEVICE_TYPE = "device_type"
+CONF_EVENT_TYPE = "event_type"
+CONF_DEVICE_EVENT_TYPE = "device_event_type"
+CONF_HAS_VALUE = "has_value"
+CONF_VALUE = "value"
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = []
@@ -57,7 +64,10 @@ SendFinishedTrigger = beethowen_transmitter_ns.class_(
 SendFailedTrigger = beethowen_transmitter_ns.class_(
     "SendFailedTrigger", automation.Trigger.template()
 )
-SendAction = beethowen_transmitter_ns.class_("SendAction", automation.Action)
+SendDataAction = beethowen_transmitter_ns.class_(
+    "SendDataAction", automation.Action)
+SendEventAction = beethowen_transmitter_ns.class_(
+    "SendEventAction", automation.Action)
 
 
 def validate_proxy_id(value):
@@ -179,7 +189,7 @@ async def to_code(config):
 
     def get_measurement_type_value_(measurement_type):
         if isinstance(measurement_type, dict):
-            measurement_type = measurement_type["measurement_type"]
+            measurement_type = measurement_type[CONF_MEASUREMENT_TYPE]
         return measurement_type
 
     # presort sensors to speed up sending and skip re-sorting every time
@@ -206,7 +216,7 @@ async def to_code(config):
     for conf in config.get(CONF_ON_SEND_FINISHED, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(
-            trigger, [(bool, "has_outstanding_measurements")], conf
+            trigger, [(bool, CONF_HAS_OUTSTANDING_MEASUREMENTS)], conf
         )
     for conf in config.get(CONF_ON_SEND_FAILED, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
@@ -215,12 +225,20 @@ async def to_code(config):
 
 @automation.register_action(
     "beethowen_transmitter.send",
-    SendAction,
-    automation.maybe_simple_id(
-        {
-            cv.GenerateID(CONF_ID): cv.use_id(BeethowenTransmitterHub),
-            cv.Optional(CONF_COMPLETE_ONLY): cv.templatable(cv.boolean)
-        }
+    SendDataAction,
+    cv.Any(
+        cv.maybe_simple_value(
+            {
+                cv.GenerateID(): cv.use_id(BeethowenTransmitterHub),
+                cv.Optional(CONF_COMPLETE_ONLY, default=True): cv.templatable(cv.boolean)
+            },
+            key=CONF_COMPLETE_ONLY),
+        automation.maybe_simple_id(
+            {
+                cv.GenerateID(): cv.use_id(BeethowenTransmitterHub),
+                cv.Optional(CONF_COMPLETE_ONLY): cv.templatable(cv.boolean)
+            }
+        )
     ),
 )
 async def beethowen_transmitter_send_to_code(config, action_id, template_arg, args):
@@ -229,5 +247,64 @@ async def beethowen_transmitter_send_to_code(config, action_id, template_arg, ar
 
     if CONF_COMPLETE_ONLY in config:
         cg.add(var.set_complete_only(config[CONF_COMPLETE_ONLY]))
+
+    return var
+
+
+def validate_device_event_type(config):
+    if not isinstance(config, dict):
+        raise cv.Invalid(f"Expecting a dictionary")
+
+    if CONF_DEVICE_TYPE in config and CONF_EVENT_TYPE in config:
+        lookup_value = config[CONF_DEVICE_TYPE] + "_" + config[CONF_EVENT_TYPE]
+    else:
+        lookup_value = config[CONF_DEVICE_EVENT_TYPE]
+
+    if not lookup_value in MEASUREMENT_TYPES_EVENT_SENSOR:
+        raise cv.Invalid(f"Invalid device event type '{lookup_value}'!")
+
+    value_struct = MEASUREMENT_TYPES_EVENT_SENSOR[lookup_value]
+    retval = HexInt(value_struct[CONF_DEVICE_EVENT_TYPE])
+
+    has_value = value_struct[CONF_HAS_VALUE] if CONF_HAS_VALUE in value_struct else False
+    if has_value and not CONF_VALUE in config:
+        raise cv.Invalid(f"Device type with event type should have a value!")
+    elif not has_value and CONF_VALUE in config:
+        raise cv.Invalid(
+            f"Device type with event type should not have a value!")
+
+    config[CONF_DEVICE_EVENT_TYPE] = retval
+    return config
+
+
+@automation.register_action(
+    "beethowen_transmitter.send_event",
+    SendEventAction,
+    cv.All(
+        cv.Any(
+            cv.Schema({
+                cv.GenerateID(CONF_ID): cv.use_id(BeethowenTransmitterHub),
+                cv.Required(CONF_DEVICE_TYPE): cv.string,
+                cv.Required(CONF_EVENT_TYPE): cv.string,
+                cv.Optional(CONF_VALUE): cv.uint8_t,
+            }),
+            cv.maybe_simple_value({
+                cv.GenerateID(CONF_ID): cv.use_id(BeethowenTransmitterHub),
+                cv.Required(CONF_DEVICE_EVENT_TYPE): cv.string,
+            }, key=CONF_DEVICE_EVENT_TYPE)
+        ),
+        validate_device_event_type)
+)
+async def beethowen_transmitter_send_event_to_code(config, action_id, template_arg, args):
+    paren = await cg.get_variable(config[CONF_ID])
+    var = cg.new_Pvariable(action_id, template_arg, paren)
+
+    if CONF_DEVICE_EVENT_TYPE in config:
+        cg.add(var.set_device_type(
+            HexInt(config[CONF_DEVICE_EVENT_TYPE] >> 8 & 0xff)))
+        cg.add(var.set_event_type(
+            HexInt(config[CONF_DEVICE_EVENT_TYPE] & 0xff)))
+    if CONF_VALUE in config:
+        cg.add(var.set_value(config[CONF_VALUE]))
 
     return var

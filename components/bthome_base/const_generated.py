@@ -139,6 +139,61 @@ MEASUREMENT_TYPES_BINARY_SENSOR = {
         "device_class": "window"
     }
 }
+MEASUREMENT_TYPES_EVENT_SENSOR = {
+    "button_none": {
+        "device_event_type": 0x3a00,
+        "measurement_type": 0x3a,
+        "event_id": 0
+    },
+    "button_click": {
+        "device_event_type": 0x3a01,
+        "measurement_type": 0x3a,
+        "event_id": 1
+    },
+    "button_double_click": {
+        "device_event_type": 0x3a02,
+        "measurement_type": 0x3a,
+        "event_id": 2
+    },
+    "button_triple_click": {
+        "device_event_type": 0x3a03,
+        "measurement_type": 0x3a,
+        "event_id": 3
+    },
+    "button_long_click": {
+        "device_event_type": 0x3a04,
+        "measurement_type": 0x3a,
+        "event_id": 4
+    },
+    "button_long_double_click": {
+        "device_event_type": 0x3a05,
+        "measurement_type": 0x3a,
+        "event_id": 5
+    },
+    "button_long_triple_click": {
+        "device_event_type": 0x3a06,
+        "measurement_type": 0x3a,
+        "event_id": 6
+    },
+    "dimmer_none": {
+        "device_event_type": 0x3c00,
+        "measurement_type": 0x3c,
+        "event_id": 0,
+        "has_value": True
+    },
+    "dimmer_rotate_left": {
+        "device_event_type": 0x3c01,
+        "measurement_type": 0x3c,
+        "event_id": 1,
+        "has_value": True
+    },
+    "dimmer_rotate_right": {
+        "device_event_type": 0x3c02,
+        "measurement_type": 0x3c,
+        "event_id": 2,
+        "has_value": True
+    }
+}
 MEASUREMENT_TYPES_NUMERIC_SENSOR = {
     "packet_id": {
         "measurement_type": 0x00,

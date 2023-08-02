@@ -51,18 +51,18 @@ namespace esphome
       restore_packetid_state_rtc_();
     }
 
-    void BeethowenTransmitterHub::add_sensor(uint8_t measurement_type, sensor::Sensor *sensor)
+    void BeethowenTransmitterHub::add_sensor(bthome_base::bthome_measurement_t measurement_type, sensor::Sensor *sensor)
     {
       BTHomeTypedSensor sobj = {measurement_type, sensor, nullptr};
-      my_sensors.push_back(sobj);
+      my_sensors_.push_back(sobj);
       sensor->add_on_state_callback([this, sobj](bool state)
                                     { this->sensor_has_updated(sobj); });
     }
 
-    void BeethowenTransmitterHub::add_sensor(uint8_t measurement_type, binary_sensor::BinarySensor *binary_sensor)
+    void BeethowenTransmitterHub::add_sensor(bthome_base::bthome_measurement_t measurement_type, binary_sensor::BinarySensor *binary_sensor)
     {
       BTHomeTypedSensor sobj = {measurement_type, nullptr, binary_sensor};
-      my_sensors.push_back(sobj);
+      my_sensors_.push_back(sobj);
       binary_sensor->add_on_state_callback([this, sobj](float state)
                                            { this->sensor_has_updated(sobj); });
     }
@@ -112,7 +112,7 @@ namespace esphome
 
     void BeethowenTransmitterHub::loop()
     {
-      this->send_data_loop();
+      this->send_datacmd_loop();
     }
 
     void BeethowenTransmitterHub::update()
@@ -159,6 +159,15 @@ namespace esphome
 
     bool BeethowenTransmitterHub::send_data(bool complete_only)
     {
+      // send data and any queued events
+      return this->send_datacmd_(complete_only, true);
+    }
+
+    bool BeethowenTransmitterHub::send_datacmd_(optional<bool> add_complete_data, bool add_events)
+    // data == null -> do not send data
+    // data == false -> send any data
+    // data == truew -> send complete
+    {
       bool success = false;
       if (this->is_server_found())
       {
@@ -167,30 +176,61 @@ namespace esphome
         // add the packet id as first measurement
         encoder.addMeasurementValue(bthome_base::BTHOME_PACKET_ID_VALUE, this->send_packet_id_);
 
-        // collect data
-        bool has_outstanding_measurements = false;
         bool has_meaningful_measurements = false;
-        for (auto btsensor_struct : my_sensors)
+
+        // collect data
+        if (add_complete_data != nullopt)
         {
-          // ESP_LOGD(TAG, ".send {measurement_type} %d, {has_sensor_state} %d", btsensor_struct.measurement_type, has_sensor_state(btsensor_struct));
-          if (has_sensor_state(btsensor_struct))
+          bool has_outstanding_measurements = false;
+          for (auto btsensor_struct : my_sensors_)
           {
-            if (is_sensor_binary(btsensor_struct))
-              encoder.addMeasurementState(btsensor_struct.measurement_type, get_sensor_binarystate(btsensor_struct).value());
+            // ESP_LOGD(TAG, ".send {measurement_type} %d, {has_sensor_state} %d", btsensor_struct.measurement_type, has_sensor_state(btsensor_struct));
+            if (has_sensor_state(btsensor_struct))
+            {
+              if (is_sensor_binary(btsensor_struct))
+                encoder.addMeasurementState(btsensor_struct.measurement_type, get_sensor_binarystate(btsensor_struct).value());
+              else
+                encoder.addMeasurementValue(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
+              has_meaningful_measurements = true;
+            }
             else
-              encoder.addMeasurementValue(btsensor_struct.measurement_type, get_sensor_state(btsensor_struct).value());
+            {
+              has_outstanding_measurements = true;
+            }
+          }
+          if (add_complete_data && has_outstanding_measurements)
+          {
+            if (!add_events)
+            {
+              return false;
+            }
+            else
+            {
+              // if complete_only + add_events are used - skip all collected data from sensors
+              encoder.resetMeasurement();
+              has_meaningful_measurements = false;
+            }
+          }
+
+          // TODO: after an outgoing send invalidate somehow -- cache all data and wait for another cycle, or wait at least 1 sec // or what
+          // ESP_LOGD(TAG, "send {do_complete_send} %d, {has_outstanding_measurements} %d", do_complete_send, has_outstanding_measurements);
+        }
+
+        if (add_events)
+        {
+          // add any queued events
+          // NOTE: this might/will break the numeric order, to be addressed for efficiency
+          if (this->queued_events_.size() > 0)
+          {
+            this->send_datacmd_awaiting_events_ = 0;
+            for (auto event : this->queued_events_)
+            {
+              encoder.addMeasurementEvent(event.measurement_type, event.event_type, event.steps);
+              this->send_datacmd_awaiting_events_++;
+            }
             has_meaningful_measurements = true;
           }
-          else
-          {
-            has_outstanding_measurements = true;
-          }
         }
-        if (complete_only && has_outstanding_measurements)
-          return false;
-
-        // TODO: after an outgoing send invalidate somehow -- cache all data and wait for another cycle, or wait at least 1 sec // or what
-        // ESP_LOGD(TAG, "send {do_complete_send} %d, {has_outstanding_measurements} %d", do_complete_send, has_outstanding_measurements);
 
         // perform send only if there is anything to send
         if (has_meaningful_measurements)
@@ -202,19 +242,19 @@ namespace esphome
 
           this->on_send_started_callback_.call();
           beethowen_base::send_command_data(get_server_address_arr(), local_passkey_, bthome_data, bthome_data_len);
-          this->send_data_awaiting_ = true;
+          this->send_datacmd_awaiting_ = true;
         }
       }
 
       return success;
     }
 
-    void BeethowenTransmitterHub::send_data_loop()
+    void BeethowenTransmitterHub::send_datacmd_loop()
     {
       // loop - if send awaited and finished
-      if (this->is_server_found() && this->send_data_awaiting_ && !beethowen_base::sending)
+      if (this->is_server_found() && this->send_datacmd_awaiting_ && !beethowen_base::sending)
       {
-        this->send_data_awaiting_ = false;
+        this->send_datacmd_awaiting_ = false;
         this->save_packetid_state_rtc_(++this->send_packet_id_);
         bool success = beethowen_base::sending_success;
 
@@ -228,15 +268,31 @@ namespace esphome
         //     yield();
         // }
 
-        if (!success)
+        if (success)
         {
+          // upon success - remove queued events waiting to be sent
+          if (this->queued_events_.size() == this->send_datacmd_awaiting_events_)
+          {
+            this->queued_events_.clear();
+          }
+          else
+          {
+            for (auto i = 0; i < this->send_datacmd_awaiting_events_; i++)
+              this->queued_events_.pop_back();
+          }
+          this->send_datacmd_awaiting_events_ = 0;
+        }
+        else
+        {
+          // reset server found
           ESP_LOGD(TAG, "ESPNow send failed, resetting server_found.");
           server_found_ = false;                     // invalidate server found
           initial_server_checkin_completed_ = false; // but first try it again on the last used channel
+          // TODO: rework this logic, maybe repeat or git this one more chance?
         }
 
         int count = encoder.get_count();
-        bool has_outstanding_measurements = my_sensors.size() == count;
+        bool has_outstanding_measurements = my_sensors_.size() == count;
         ESP_LOGD(TAG, "Sending finished {success} %d, {has_outstanding_measurements} %d, {count} %d",
                  success, has_outstanding_measurements, count);
 
@@ -284,6 +340,20 @@ namespace esphome
         if (this->send_data(true))
           this->last_send_millis_ = millis();
       }
+    }
+
+    bool BeethowenTransmitterHub::send_event(bthome_measurement_t device_type, uint8_t event_type, uint8_t value)
+    {
+      // first queue the event
+      if (this->queued_events_.size() >= BEETHOWEN_MAX_EVENT_QUEUE_LEN)
+        return false;
+
+      this->queued_events_.push_back({device_type, event_type, value});
+
+      // then start sending the event - only events, regardless of success, return true as we will have this queued
+      this->send_datacmd_(nullopt, true);
+
+      return true;
     }
   }
 }

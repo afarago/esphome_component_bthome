@@ -40,7 +40,7 @@ tables = soup.find_all("table")
 main_types = [
     "numeric",  # Object id	Property	Data type	Factor	Example	Result	Unit
     "binary",  # Object id	Property	Data type
-    "event_binary",  # Object id	Device type	Event id	Event type	Event property
+    "event",  # Object id	Device type	Event id	Event type	Event property
     "numeric",  # Object id	Property	Data Type
 ]  # main types in sections within bthome.io/format page
 
@@ -56,12 +56,13 @@ for imain in range(4):
     for row in table.findAll("tr"):
         factor = 1
         unit_of_measurement = None
+        sensor_data = {}
 
         row = row.find_all("td")
         row = [ele.text.strip() for ele in row]
 
         object_id_raw = row[0]
-        property = row[1]
+        property = property_unique = row[1]
         event_is_subevent = None
         if main_type in ["binary", "numeric"]:
             data_type = row[2]
@@ -72,17 +73,14 @@ for imain in range(4):
                     re.search("\((\d+)", data_type).group(1))
             except:
                 pass
-        elif main_type == "event_binary":
+        elif main_type == "event":
             if object_id_raw == "":  # not the first row - object_id is empty
                 object_id_raw = row[0] = lastrow[0]
                 property = row[1] = lastrow[1]
-                event_id = row[2]
-                object_id_raw = object_id_raw + event_id.replace("0x", "")
-                event_type = row[3].lower()  # if row[3] != "None" else None
-                property = f"{property}_ext_{event_type}"
-                # event_is_subevent = True
-            else:
-                property = f"{property}"
+            device_type = property
+            event_id = row[2]
+            event_type = row[3].replace("press", "click").lower()
+            property_unique = f"{property}_{event_type}"
             unit_of_measurement = row[4].replace("#", "").replace(" ", "")
 
             example_len = (int)(len(row[5].strip()) / 2)
@@ -90,6 +88,10 @@ for imain in range(4):
             data_type = f"uint8 ({data_type_length} byte)"
 
             data_type_signed = False
+
+            sensor_data["event_id"] = int(event_id, 16)
+            sensor_data["event_type"] = event_type
+            sensor_data["device_type"] = device_type
         else:
             print("ERROR 1a", main_type)
             continue
@@ -99,13 +101,16 @@ for imain in range(4):
         # print(object_id_raw, object_id)
 
         # sanitize property
-        property = (
-            property.replace(" ", "_")
-            .replace(".", "_")
-            .replace("(", "")
-            .replace(")", "")
-            .lower()
-        )
+        def sanitize_property(value):
+            return (
+                value.replace(" ", "_")
+                .replace(".", "_")
+                .replace("(", "")
+                .replace(")", "")
+                .lower()
+            )
+        property = sanitize_property(property)
+        property_unique = sanitize_property(property_unique)
 
         if main_type == "numeric":
             try:
@@ -125,25 +130,23 @@ for imain in range(4):
             | (accuracy_decimals << 5)
         )
 
-        sensor_data = {
+        sensor_data.update({
             "property": property,
-            "property_unique": property,
+            "property_unique": property_unique,
             "main_type": main_type,
             "decode_datatype_key": decode_datatype_key,
             "data_type": data_type,
             "data_type_signed": data_type_signed,
             "data_type_length": data_type_length,
             "measurement_type": object_id,
-            # object_id_raw
-            "measurement_type_hex": ("0x"+format(object_id_firstbyte, "02x")),
+            "measurement_type_hex16": helpers.hex2(object_id_firstbyte, 2),
             "accuracy_decimals": accuracy_decimals,
             "unit_of_measurement": unit_of_measurement,
             "device_class": helpers.find_matching_device_class(
                 object_id, property, main_type
             ),
             # "icon": helpers.find_matching_icon(object_id, property, main_type) # NOTE: check and understand how and which default icon is assigned in home assistant
-            # "event_is_subevent": event_is_subevent,
-        }
+        })
 
         data.append(sensor_data)
 
@@ -205,7 +208,7 @@ for index, item in enumerate(data):
             global base_accuracy_at
             # prop_value = item['property']
             meas_value = item["measurement_type"]
-            # print(f"  == {item['measurement_type_hex']}")
+            # print(f"  == {item['measurement_type_hex16']}")
             retval = ""
 
             for cindex, crow in enumerate(differentiator_matrix):
@@ -328,19 +331,48 @@ namespace bthome_base
 
     def generate_encoder_enum(data):
         values = []
+        event_values = {}
+        event_subvalues = {}
         for item in data:
+            propname = item["property_unique"]
+            value = item["measurement_type_hex16"]
             if item["main_type"] == "numeric":
                 extension = "VALUE"
             elif item["main_type"] == "binary":
                 extension = "STATE"
-            elif item["main_type"] == "event_binary":
+            elif item["main_type"] == "event":
                 extension = "EVENT"
+                value2 = helpers.hex2(item["event_id"], 2)
+
+                device_type = item["device_type"]
+                event_type = item["event_type"]
+
+                event_values[device_type] = item["measurement_type"]
+                event_first = not device_type in event_subvalues
+                if event_first:
+                    propname = item["property"]
+                    event_subvalues[device_type] = []
+
+                event_subvalues[device_type].append(
+                    f'  BTHOME_{device_type.upper()}_{event_type.replace(" ","_").upper()} = {value2}'
+                )
+
+                if not event_first:
+                    continue
             else:
                 extension = "__"
             values.append(
-                f'  BTHOME_{item["property_unique"].upper()}_{extension} = {item["measurement_type_hex"]}'
+                f'  BTHOME_{propname.upper()}_{extension} = {value}'
             )
-        return "typedef enum {\n" + ", \n".join(values) + "\n} BTHome_e;\n\n"
+
+        retval = "typedef enum {\n" + ", \n".join(values) + "\n} BTHome_e;\n\n"
+        retval += "".join(
+            ("typedef enum {\n" +
+             ", \n".join(event_subvalues[value])
+             + "\n} BTHome_"+value.capitalize()+"_e;\n\n")
+            for value in list(event_values)
+        )
+        return retval
 
     data1 = generate_encoder_enum(data)
     f.write(data1)
@@ -402,22 +434,39 @@ def create_const_generated(data):
         values = {}
         for item in data:
             if item["main_type"] == main_type:
-                convitem = {"measurement_type": item["measurement_type"]}
-                if item["accuracy_decimals"] != None:
-                    convitem["accuracy_decimals"] = item["accuracy_decimals"]
-                if item["unit_of_measurement"] != None:
-                    convitem["unit_of_measurement"] = item["unit_of_measurement"]
-                if item["device_class"] != None:
-                    convitem["device_class"] = item["device_class"]
-                # if item["icon"] != None: # NOTE: check and understand how and which default icon is assigned in home assistant
-                #     convitem["icon"] = item["icon"]
+                if (main_type != "event"):
+                    convitem = {"measurement_type": item["measurement_type"]}
+                    if item["accuracy_decimals"] != None:
+                        convitem["accuracy_decimals"] = item["accuracy_decimals"]
+                    if item["unit_of_measurement"] != None:
+                        convitem["unit_of_measurement"] = item["unit_of_measurement"]
+                    if item["device_class"] != None:
+                        convitem["device_class"] = item["device_class"]
+                    # if item["icon"] != None: # NOTE: check and understand how and which default icon is assigned in home assistant
+                    #     convitem["icon"] = item["icon"]
+                else:
+                    convitem = {
+                        "device_event_type": item["measurement_type"] << 8 | item["event_id"],
+                        "measurement_type": item["measurement_type"],
+                        "event_id": item["event_id"]
+                    }
+                    if (item["data_type_length"] > 1):
+                        convitem["has_value"] = True
+
+                    # TODO: python serialize to python - not json
+
+                    # print(item)
                 values[item["property_unique"]] = convitem
 
         retval = json.dumps(values, indent=4, ensure_ascii=False)
-        # retval = re.sub('(\"measurement_type\": )(\d+)', lambda i: hex(int(i.group(1))),retval)
-        retval = re.sub(
-            '(?<="measurement_type": )(\d+)', lambda i: f"0x{int(i.group(0)):02x}", retval
-        )
+        retval = re.sub('(?<=\"measurement_type\": )(\d+)',
+                        lambda i: helpers.hex2(int(i.group(1)), 2), retval)
+        retval = re.sub('(?<=\"device_event_type\": )(\d+)',
+                        lambda i: hex(int(i.group(1))), retval)
+        # retval = re.sub(
+        #     '(?<=: )(\d+)', lambda i: f"0x{int(i.group(0)):02x}", retval
+        # )
+        retval = retval.replace("true", "True")
 
         return retval
 
@@ -428,8 +477,6 @@ def create_const_generated(data):
     main_types_unique = sorted(imain for imain in set(main_types) if imain)
     for imain in main_types_unique:
         if imain is None:
-            continue
-        if imain == "event_binary":
             continue
 
         f.write(f"MEASUREMENT_TYPES_{imain.upper()}_SENSOR = ")
@@ -464,7 +511,7 @@ def dump_types_for_doc(data):
             for col in data_columns) + "\n")
     f.write(gen_header("-", " ", data_columns))
 
-    data_columns = ["measurement_type_hex", "property_unique",
+    data_columns = ["measurement_type_hex16", "property_unique",
                     "data_type_length", "accuracy_decimals", "unit_of_measurement", "main_type"]
     for item in data:
         f.write(col_sep_char.join(('{0: <'+str(col_length)+'}').format(

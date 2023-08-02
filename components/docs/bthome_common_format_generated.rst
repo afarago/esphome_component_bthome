@@ -49,16 +49,16 @@ Object id            Property             Length (byte)        Decimals         
 0x2d                 window               1                                                              binary              
 0x2e                 humidity_coarse      1                                         %                    numeric             
 0x2f                 moisture_coarse      1                                         %                    numeric             
-0x3a                 button               1                                                              event_binary        
-0x3a                 button_ext_press     1                                                              event_binary        
-0x3a                 button_ext_double_press 1                                                              event_binary        
-0x3a                 button_ext_triple_press 1                                                              event_binary        
-0x3a                 button_ext_long_press 1                                                              event_binary        
-0x3a                 button_ext_long_double_press 1                                                              event_binary        
-0x3a                 button_ext_long_triple_press 1                                                              event_binary        
-0x3c                 dimmer               2                                                              event_binary        
-0x3c                 dimmer_ext_rotate_left 2                                         steps                event_binary        
-0x3c                 dimmer_ext_rotate_right 2                                         steps                event_binary        
+0x3a                 button_none          1                                                              event               
+0x3a                 button_click         1                                                              event               
+0x3a                 button_double_click  1                                                              event               
+0x3a                 button_triple_click  1                                                              event               
+0x3a                 button_long_click    1                                                              event               
+0x3a                 button_long_double_click 1                                                              event               
+0x3a                 button_long_triple_click 1                                                              event               
+0x3c                 dimmer_none          2                                                              event               
+0x3c                 dimmer_rotate_left   2                                         steps                event               
+0x3c                 dimmer_rotate_right  2                                         steps                event               
 0x3d                 count_2              2                                                              numeric             
 0x3e                 count_4              4                                                              numeric             
 0x3f                 rotation             2                    1                    °                    numeric             

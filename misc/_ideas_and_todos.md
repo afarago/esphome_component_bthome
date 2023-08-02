@@ -10,13 +10,6 @@
 - auto find mechanism finetuning // e.g. if not found for first iteration just skip measurement and sleep for 10 iterations / thus have an unsuccess counter before reconnect attempt
 - transmitter: invalidate auto_send / per sensor
 - separate receiver / handlere with a semaphored queue + external thread
-- send ack / waiting?
-
-----------------------------------------------------------------
-# Add packet id
-packet id
-0x00 0x01
-
 
 ----------------------------------------------------------------
 # Speedup the find server
@@ -236,3 +229,45 @@ typedef enum {
   BTHOME_BUTTON_EVENT_LONGPRESS = 0x02, 
 } BTHome_Button_Event_Types_e;
 ```
+
+----------------------------------------------------------------
+
+Event handling
+
+transmitter:
+action:
+	- beethowen_transmitter.event: button_press
+	- beethowen_transmitter.event: button_double_press
+	- beethowen_transmitter.event: button_long_press
+	- beethowen_transmitter.event: button
+		event_type: press
+	- beethowen_transmitter.event: dimmer_rotate_left
+		steps: 3
+	- beethowen_transmitter.event: dimmer
+    	event_type: rotate_left
+    	steps: 3
+
+vector on events to transmit
+remove only upon successful delivery
+can add multiple events as well
+no need to restore from persistent storage
+max queue size ~5
+
+max_event_len: 3bytes
+
+vector<uint32> queued_events_;
+queued_events_.push_back(0x3A01)
+queued_events_.push_back(0x3C0103)
+
+send_data()
+	encoder.addMeasurementEvent(0x3A, 0x01)
+	encoder.addMeasurementEvent(0x3C, 0x01, 0x03)
+
+receiver:
+	::report_measurements_
+		on_event_received(bthome_measurement_t sensor_id, uint8_t event_id, uint8_t steps) trigger 
+
+
+------------
+
+

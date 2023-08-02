@@ -56,15 +56,7 @@ typedef enum {
   BTHOME_HUMIDITY_COARSE_VALUE = 0x2e, 
   BTHOME_MOISTURE_COARSE_VALUE = 0x2f, 
   BTHOME_BUTTON_EVENT = 0x3a, 
-  BTHOME_BUTTON_EXT_PRESS_EVENT = 0x3a, 
-  BTHOME_BUTTON_EXT_DOUBLE_PRESS_EVENT = 0x3a, 
-  BTHOME_BUTTON_EXT_TRIPLE_PRESS_EVENT = 0x3a, 
-  BTHOME_BUTTON_EXT_LONG_PRESS_EVENT = 0x3a, 
-  BTHOME_BUTTON_EXT_LONG_DOUBLE_PRESS_EVENT = 0x3a, 
-  BTHOME_BUTTON_EXT_LONG_TRIPLE_PRESS_EVENT = 0x3a, 
   BTHOME_DIMMER_EVENT = 0x3c, 
-  BTHOME_DIMMER_EXT_ROTATE_LEFT_EVENT = 0x3c, 
-  BTHOME_DIMMER_EXT_ROTATE_RIGHT_EVENT = 0x3c, 
   BTHOME_COUNT_2_VALUE = 0x3d, 
   BTHOME_COUNT_4_VALUE = 0x3e, 
   BTHOME_ROTATION_VALUE = 0x3f, 
@@ -88,6 +80,22 @@ typedef enum {
   BTHOME_ACCELERATION_VALUE = 0x51, 
   BTHOME_GYROSCOPE_VALUE = 0x52
 } BTHome_e;
+
+typedef enum {
+  BTHOME_BUTTON_NONE = 0x00, 
+  BTHOME_BUTTON_CLICK = 0x01, 
+  BTHOME_BUTTON_DOUBLE_CLICK = 0x02, 
+  BTHOME_BUTTON_TRIPLE_CLICK = 0x03, 
+  BTHOME_BUTTON_LONG_CLICK = 0x04, 
+  BTHOME_BUTTON_LONG_DOUBLE_CLICK = 0x05, 
+  BTHOME_BUTTON_LONG_TRIPLE_CLICK = 0x06
+} BTHome_Button_e;
+
+typedef enum {
+  BTHOME_DIMMER_NONE = 0x00, 
+  BTHOME_DIMMER_ROTATE_LEFT = 0x01, 
+  BTHOME_DIMMER_ROTATE_RIGHT = 0x02
+} BTHome_Dimmer_e;
 
 static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ 
   0b00000001, /* 0x00 | packet_id | packet_id | uint8 (1 byte) | 0 */
@@ -148,9 +156,9 @@ static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bi
   0b00000000, /* unused */
   0b00000000, /* unused */
   0b00000000, /* unused */
-  0b00000001, /* 0x3a | button | button | uint8 (1 byte) | 0 */
+  0b00000001, /* 0x3a | button | button_none | uint8 (1 byte) | 0 */
   0b00000000, /* unused */
-  0b00000010, /* 0x3c | dimmer | dimmer | uint8 (2 byte) | 0 */
+  0b00000010, /* 0x3c | dimmer | dimmer_none | uint8 (2 byte) | 0 */
   0b00000010, /* 0x3d | count | count_2 | uint (2 bytes) | 0 */
   0b00000100, /* 0x3e | count | count_4 | uint (4 bytes) | 0 */
   0b00101010, /* 0x3f | rotation | rotation | sint16 (2 bytes) | 1 */
