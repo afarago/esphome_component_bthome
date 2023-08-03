@@ -71,15 +71,15 @@ namespace esphome
 
       void play(Ts... x) override { this->hub_->send_event(this->device_type_, this->event_type_, this->value_); }
 
-      void set_device_type(bool value) { this->device_type_ = value; }
-      void set_event_type(bool value) { this->event_type_ = value; }
-      void set_value(bool value) { this->value_ = value; }
+      void set_device_type(bthome_measurement_t value) { this->device_type_ = value; }
+      void set_event_type(uint8_t value) { this->event_type_ = value; }
+      void set_value(uint8_t value) { this->value_ = value; }
 
     protected:
       BeethowenTransmitterHub *hub_;
 
     private:
-      uint8_t device_type_{0x00};
+      bthome_measurement_t device_type_{0x00};
       uint8_t event_type_{0x00};
       uint8_t value_{0x00};
     };
