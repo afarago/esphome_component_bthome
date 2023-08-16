@@ -14,6 +14,7 @@ namespace esphome
 {
   namespace bthome_receiver_base
   {
+    using namespace bthome_base;
     static const char *const TAG = "bthome_receiver_base.device";
 
     void BTHomeReceiverBaseDevice::dump_config()
@@ -36,7 +37,7 @@ namespace esphome
       // step 1. arrange incoming measurements if not in right order
       // if incoming data is unordered this will not match the sensors
       auto measurement_type_compare = [](const bthome_measurement_record_t &a, const bthome_measurement_record_t &b)
-      { return a.id <= b.id; };
+      { return a.d.id <= b.d.id; };
 
       if (std::is_sorted(measurements.begin(), measurements.end(), measurement_type_compare))
       {
@@ -49,16 +50,24 @@ namespace esphome
       for (auto measurement : measurements)
       {
         bool matched = false;
-        while (btsensor_iter != this->my_sensors.end() && (*btsensor_iter)->compare(measurement.id) < 0)
-          btsensor_iter = std::next(btsensor_iter);
-
-        // check if sensor type is matches measurement type
-        if (btsensor_iter != this->my_sensors.end() && (*btsensor_iter)->compare(measurement.id) == 0)
+        if (measurement.is_value)
         {
-          auto btsensor = *btsensor_iter;
+          while (btsensor_iter != this->my_sensors.end() && (*btsensor_iter)->compare(measurement.d.id) < 0)
+            btsensor_iter = std::next(btsensor_iter);
+
+          // check if sensor type is matches measurement type
+          if (btsensor_iter != this->my_sensors.end() && (*btsensor_iter)->compare(measurement.d.id) == 0)
+          {
+            auto btsensor = *btsensor_iter;
+            matched = true;
+            btsensor->publish_data(measurement.d.value.value);
+            btsensor_iter = std::next(btsensor_iter);
+          }
+        }
+        else
+        {
+          // events are considered as matched
           matched = true;
-          btsensor->publish_data(measurement.value);
-          btsensor_iter = std::next(btsensor_iter);
         }
 
         // report

@@ -32,13 +32,6 @@ namespace esphome
       binary_sensor::BinarySensor *binary_sensor;
     } BTHomeTypedSensor;
 
-    typedef struct __attribute__((packed))
-    {
-      bthome_base::bthome_measurement_t measurement_type;
-      uint8_t event_type;
-      uint8_t steps;
-    } BTHomeEventRecord;
-
     class BeethowenTransmitterHub : public PollingComponent
     {
     public:
@@ -127,7 +120,7 @@ namespace esphome
       uint8_t send_datacmd_awaiting_events_{0};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
-      std::vector<BTHomeEventRecord> queued_events_;
+      std::vector<bthome_base::bthome_measurement_event_record_t> queued_events_;
       std::vector<BTHomeTypedSensor> my_sensors_;
       bthome_base::BTHomeEncoder encoder{MAX_BEETHOWEN_PAYLOAD_LENGTH};
 

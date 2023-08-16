@@ -225,7 +225,7 @@ namespace esphome
             this->send_datacmd_awaiting_events_ = 0;
             for (auto event : this->queued_events_)
             {
-              encoder.addMeasurementEvent(event.measurement_type, event.event_type, event.steps);
+              encoder.addMeasurementEvent(event.device_type, event.event_type, event.steps);
               this->send_datacmd_awaiting_events_++;
             }
             has_meaningful_measurements = true;

@@ -89,6 +89,14 @@ binary_sensor:
     pin: D6
     id: binary_d6
     internal: true
+  - platform: gpio
+    pin:
+      number: D3
+      mode: INPUT_PULLUP
+      inverted: true
+    id: user_button
+    on_click:
+      - beethowen_transmitter.send_event: button_click
 
 deep_sleep:
   run_duration: 20s # max run duration for safeguarding

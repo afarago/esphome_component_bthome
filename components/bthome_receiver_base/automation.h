@@ -31,5 +31,19 @@ namespace esphome
                                        { this->trigger(address, measurements); });
       }
     };
+
+    class EventTrigger : public Trigger<const mac_address_t, const bthome_measurement_event_record_t>
+    {
+    public:
+      explicit EventTrigger(BTHomeReceiverBaseHub *parent)
+      {
+        parent->add_on_event_callback([this](const mac_address_t address, const bthome_measurement_event_record_t event)
+                                      { this->trigger(address, event); });
+      }
+    };
+
+    // add_on_event_callback
+    //  if (event == "click" this->trigger(address, event);)
+
   }
 }

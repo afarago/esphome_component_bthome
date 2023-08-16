@@ -11,12 +11,43 @@
 
 namespace bthome_base
 {
+    using namespace std;
+
     typedef uint64_t mac_address_t;
     typedef uint8_t bthome_measurement_t;
+
+    typedef struct __attribute__((packed))
+    {
+        bthome_measurement_t id;
+
+        float value;
+    } bthome_measurement_value_record_t;
+
+    typedef struct __attribute__((packed))
+    {
+        bthome_measurement_t device_type;
+
+        uint8_t event_type;
+        uint8_t steps;
+    } bthome_measurement_event_record_t;
+
+    // typedef union
+    // {
+    //     bthome_measurement_t id;
+    //     bthome_measurement_value_record_t value;
+    //     bthome_measurement_event_record_t event;
+    // } bthome_measurement_record_u;
+
     typedef struct
     {
-      bthome_measurement_t id;
-      float value;
+        bool is_value;
+        // bthome_measurement_record_u d;
+        union
+        {
+            bthome_measurement_t id;
+            bthome_measurement_value_record_t value;
+            bthome_measurement_event_record_t event;
+        } d;
     } bthome_measurement_record_t;
 
     std::string addr64_to_str(mac_address_t address);

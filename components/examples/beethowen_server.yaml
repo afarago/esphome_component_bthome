@@ -35,7 +35,23 @@ time:
 beethowen_receiver:
   # dump: all
   local_passkey: 0x1234
-  #       //id(lastupdate_ts).publish_state(time_ts);
+  on_event: # on_event(address, event)
+    - lambda: |-
+        // ESP_LOGI("app", "event received {id} 0x%x {event_type} %d ({steps} %d)",
+        //  event.id, event.event_type, event.steps);
+        if (event.id == bthome_base::BTHOME_BUTTON_EVENT) {
+          if (event.id == bthome_base::BTHOME_BUTTON_CLICK) {
+            ESP_LOGI("app", "button_click event");
+          }
+        }
+  # adding named events to device will be the next step
+  # on_button_click: 
+  on_packet: # on_packet(address, measurements)
+    - lambda: |-
+        ESP_LOGI("app", "packet {count} %d", measurements.size());
+    # - light.turn_on:
+    #     id: my_led
+    #     flash_length: 50ms
   devices:
     - mac_address: 48:3F:DA:0C:97:18
       name_prefix: Beethowen TestDevice
@@ -44,6 +60,11 @@ beethowen_receiver:
       name_prefix: Beethowen ABCDEF TestDevice
       dump: unmatched
       expected_remote_passkey: 0x2345
+      # adding events to device will be the next step
+      # on_event: # on_event(address, event)
+      #   - lambda: |-
+      #       // ESP_LOGI("app", "event received {id} 0x%x {event_type} %d ({steps} %d)",
+      #       //  event.id, event.event_type, event.steps);
 
 binary_sensor:
   - platform: beethowen_receiver

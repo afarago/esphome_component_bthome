@@ -1,3 +1,5 @@
+:orphan:
+
 BTHome and Beethowen Components
 ===============================
 

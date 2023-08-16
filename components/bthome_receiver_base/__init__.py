@@ -36,6 +36,7 @@ CONF_DEVICES = "devices"
 CONF_SENSORS = "sensors"
 CONF_MEASUREMENT_TYPE = "measurement_type"
 CONF_ON_PACKET = "on_packet"
+CONF_ON_EVENT = "on_event"
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = []
@@ -53,7 +54,12 @@ BTHomeReceiverBaseDevice = bthome_receiver_base_ns.class_(
 PacketTrigger = bthome_receiver_base_ns.class_(
     "PacketTrigger", automation.Trigger.template()
 )
+EventTrigger = bthome_receiver_base_ns.class_(
+    "EventTrigger", automation.Trigger.template()
+)
 BTHomeMeasurementRecord = bthome_base_ns.struct("bthome_measurement_record_t")
+BTHomeMeasurementEventRecord = bthome_base_ns.struct(
+    "bthome_measurement_event_record_t")
 
 DumpOption = bthome_receiver_base_ns.enum("DumpOption")
 DUMP_OPTION = {
@@ -90,10 +96,13 @@ class DeviceStorage:
 
     def get_device(self):
         return self.device_
+
     def get_mac_address(self):
         return self.mac_address_
+
     def get_name_prefix(self):
         return self.name_prefix_
+
 
 class Generator:
     hub_ = {}
@@ -147,6 +156,11 @@ class Generator:
                         cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PacketTrigger),
                     }
                 ),
+                cv.Optional(CONF_ON_EVENT): automation.validate_automation(
+                    {
+                        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(EventTrigger),
+                    }
+                ),
             }
         ).extend(cv.COMPONENT_SCHEMA)
         return CONFIG_SCHEMA
@@ -165,7 +179,8 @@ class Generator:
             await cg.register_component(var, config)
 
             name_prefix_str = (
-                str(config[CONF_NAME_PREFIX]) if CONF_NAME_PREFIX in config else None
+                str(config[CONF_NAME_PREFIX]
+                    ) if CONF_NAME_PREFIX in config else None
             )
             devs = DeviceStorage(var, mac_address_str, name_prefix_str)
             self.devices_by_addr_[mac_address_str] = devs
@@ -188,7 +203,8 @@ class Generator:
         if CONF_DUMP_OPTION in config:
             cg.add(var.set_dump_option(config[CONF_DUMP_OPTION]))
         if CONF_DUMP_PACKETS_OPTION in config:
-            cg.add(var.set_dump_packets_option(config[CONF_DUMP_PACKETS_OPTION]))
+            cg.add(var.set_dump_packets_option(
+                config[CONF_DUMP_PACKETS_OPTION]))
 
         # iterate around the devices
         if CONF_DEVICES in config:
@@ -208,6 +224,16 @@ class Generator:
                         ),
                         "measurements",
                     ),
+                ],
+                conf,
+            )
+        for conf in config.get(CONF_ON_EVENT, []):
+            trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+            await automation.build_automation(
+                trigger,
+                [
+                    (cg.uint64.operator("const"), "address"),
+                    (BTHomeMeasurementEventRecord.operator("const"), "event")
                 ],
                 conf,
             )
@@ -351,7 +377,8 @@ class Generator:
 
                     cg.add(
                         var_item.set_measurement_type(
-                            HexInt(measurement_type_record[CONF_MEASUREMENT_TYPE])
+                            HexInt(
+                                measurement_type_record[CONF_MEASUREMENT_TYPE])
                         )
                     )
 
@@ -386,7 +413,8 @@ class Generator:
                         measurement_type_record.get(CONF_ICON)
                         and not CONF_ICON in config_item
                     ):
-                        cg.add(var_item.set_icon(measurement_type_record[CONF_ICON]))
+                        cg.add(var_item.set_icon(
+                            measurement_type_record[CONF_ICON]))
                 else:
                     cg.add(
                         var_item.set_measurement_type(
@@ -397,7 +425,8 @@ class Generator:
                 # last statement - add the sensor
                 cg.add(
                     paren.add_sensor(
-                        devs.get_device(), config[CONF_MAC_ADDRESS].as_hex, var_item
+                        devs.get_device(
+                        ), config[CONF_MAC_ADDRESS].as_hex, var_item
                     )
                 )
 

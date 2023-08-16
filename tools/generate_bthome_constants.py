@@ -494,7 +494,7 @@ create_const_generated(data)
 
 def dump_types_for_doc(data):
 
-    col_length = 20
+    col_length = 30
     col_sep_char = " "
 
     def gen_header(achar, asepchar, data_columns):
@@ -503,6 +503,7 @@ def dump_types_for_doc(data):
     fname = TARGET_DOC_DIR + "bthome_common_format_generated.rst"
     print(f"generating {fname}...")
     f = open(fname, "w", encoding="utf-8")
+    f.write(":orphan:\n\n")
 
     data_columns = ["Object id", "Property",
                     "Length (byte)", "Decimals", "Unit", "Type"]

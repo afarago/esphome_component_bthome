@@ -7,6 +7,8 @@
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 
+#include "esphome/components/bthome_base/bthome_base_common.h"
+
 #include "bthome_receiver_base_common.h"
 #include "bthome_receiver_base_device.h"
 #include "bthome_receiver_base_basesensor.h"
@@ -17,6 +19,8 @@ namespace esphome
 {
   namespace bthome_receiver_base
   {
+    using namespace bthome_base;
+
     static const char *const TAG = "bthome_receiver_base";
 
     BTHomeReceiverBaseDevice *BTHomeReceiverBaseHub::add_device(mac_address_t address)
@@ -57,13 +61,28 @@ namespace esphome
                      btdevice ? btdevice->get_name_prefix().c_str() : "");
             device_header_reported = true;
           }
-          ESP_LOGD(TAG, " - measure_type: 0x%02x = value: %0.3f%s",
-                   measurement.id, measurement.value,
-                   matched ? "" : ", unmatched");
+          if (measurement.is_value)
+            ESP_LOGD(TAG, " - measure_type: 0x%02x = value: %0.3f%s",
+                     measurement.d.value.id, measurement.d.value.value,
+                     matched ? "" : ", unmatched");
+          else
+            ESP_LOGD(TAG, " - id: 0x%02x = event_type %d, value: %d",
+                     measurement.d.event.device_type, measurement.d.event.event_type, measurement.d.event.steps);
         }
 #endif // ESPHOME_LOG_HAS_DEBUG
       };
 
+      // report events - trigger automation
+      for (auto item : measurements)
+      {
+        if (!item.is_value)
+        {
+          // TODO: events should not be logged as unmatched
+          this->on_event_callback_.call(address, item.d.event);
+        }
+      }
+
+      // report measurements to devices
       if (btdevice)
         btdevice->report_measurements_(measurements, measurement_log_handler);
       else
@@ -71,9 +90,10 @@ namespace esphome
           measurement_log_handler(item, false);
     }
 
-    vector<bthome_measurement_record_t> BTHomeReceiverBaseHub::parse_message_bthome_(const mac_address_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
+    optional<uint8_t> BTHomeReceiverBaseHub::parse_message_bthome_(const mac_address_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto)
     {
       vector<bthome_measurement_record_t> measurements;
+
       // TODO: should do a loop here instead of finding the right device and stopping
       //  for (auto btdevice_i : this->my_devices)
       //    if (btdevice_i->match(address))
@@ -95,11 +115,31 @@ namespace esphome
 #endif // ESPHOME_LOG_LEVEL_DEBUG
 
       // parse the payload and report measurements in the callback, will be fixing this to V2
+      optional<uint8_t> packet_id = nullopt;
       bthome_base::parse_payload_bthome(
           payload_data, payload_length, proto,
           [&](uint8_t measurement_type, float value)
           {
-            measurements.push_back({measurement_type, value});
+            switch (measurement_type)
+            {
+            case BTHOME_BUTTON_EVENT:
+            case BTHOME_DIMMER_EVENT:
+            {
+              bthome_measurement_event_record_t event_data{measurement_type, (uint8_t)((int)value & 0xff), (uint8_t)((int)value << 8 & 0xff)};
+              bthome_measurement_record_t data{false, .d = {.event = event_data}};
+              measurements.push_back(data);
+              break;
+            }
+            case BTHOME_PACKET_ID_VALUE:
+              packet_id = value; // intentional fallthrough
+            default:
+            {
+              bthome_measurement_value_record_t value_data{measurement_type, value};
+              bthome_measurement_record_t data{true, .d = {.value = value_data}};
+              measurements.push_back(data);
+            }
+            break;
+            }
           },
           [&](const char *message)
           {
@@ -112,8 +152,8 @@ namespace esphome
       // trigger automation
       this->on_packet_callback_.call(address, measurements);
 
-      // return parsed measurements
-      return measurements;
+      // return parsed packet_id
+      return packet_id;
     }
 
   }
