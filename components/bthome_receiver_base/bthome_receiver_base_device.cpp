@@ -36,10 +36,10 @@ namespace esphome
 
       // step 1. arrange incoming measurements if not in right order
       // if incoming data is unordered this will not match the sensors
-      auto measurement_type_compare = [](const bthome_measurement_record_t &a, const bthome_measurement_record_t &b)
-      { return a.d.id <= b.d.id; };
+      auto measurement_type_compare = ([](const bthome_measurement_record_t &a, const bthome_measurement_record_t &b)
+                                       { return a.d.id <= b.d.id; });
 
-      if (std::is_sorted(measurements.begin(), measurements.end(), measurement_type_compare))
+      if (!std::is_sorted(measurements.begin(), measurements.end(), measurement_type_compare))
       {
         ESP_LOGD(TAG, "BTHome device is not sending object ids in numerical order (from low to high object id).");
         std::stable_sort(measurements.begin(), measurements.end(), measurement_type_compare);

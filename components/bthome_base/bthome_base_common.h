@@ -31,13 +31,6 @@ namespace bthome_base
         uint8_t steps;
     } bthome_measurement_event_record_t;
 
-    // typedef union
-    // {
-    //     bthome_measurement_t id;
-    //     bthome_measurement_value_record_t value;
-    //     bthome_measurement_event_record_t event;
-    // } bthome_measurement_record_u;
-
     typedef struct
     {
         bool is_value;
