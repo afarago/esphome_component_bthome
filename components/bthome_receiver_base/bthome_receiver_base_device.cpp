@@ -37,7 +37,7 @@ namespace esphome
       // step 1. arrange incoming measurements if not in right order
       // if incoming data is unordered this will not match the sensors
       auto measurement_type_compare = ([](const bthome_measurement_record_t &a, const bthome_measurement_record_t &b)
-                                       { return a.d.id <= b.d.id; });
+                                       { return a.d.id < b.d.id; });
 
       if (!std::is_sorted(measurements.begin(), measurements.end(), measurement_type_compare))
       {
