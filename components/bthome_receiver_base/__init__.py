@@ -26,6 +26,7 @@ from esphome.core import CORE, HexInt, coroutine_with_priority
 from esphome.components.bthome_base.const import (
     MEASUREMENT_TYPES_NUMERIC_SENSOR,
     MEASUREMENT_TYPES_BINARY_SENSOR,
+    MEASUREMENT_TYPES_EVENT_SENSOR
 )
 
 CONF_BTHomeReceiverBaseDevice_ID = "BTHomeReceiverBaseDevice_ID"
@@ -37,6 +38,7 @@ CONF_SENSORS = "sensors"
 CONF_MEASUREMENT_TYPE = "measurement_type"
 CONF_ON_PACKET = "on_packet"
 CONF_ON_EVENT = "on_event"
+CONF_ON_EVENT_PREFIX = "on_"
 
 CODEOWNERS = ["@afarago"]
 DEPENDENCIES = []
@@ -141,6 +143,7 @@ class Generator:
         )
 
     def generate_component_schema(self):
+
         CONFIG_SCHEMA = cv.Schema(
             {
                 cv.GenerateID(): cv.declare_id(self.get_hub()),
@@ -160,9 +163,16 @@ class Generator:
                     {
                         cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(EventTrigger),
                     }
-                ),
+                )
             }
+        ).extend(cv.Schema(
+            {cv.Optional(CONF_ON_EVENT_PREFIX + device_event): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(EventTrigger)
+                }
+            ) for device_event in MEASUREMENT_TYPES_EVENT_SENSOR})
         ).extend(cv.COMPONENT_SCHEMA)
+
         return CONFIG_SCHEMA
 
     async def to_code_device(self, parent, config, ID_PROP):
@@ -237,6 +247,24 @@ class Generator:
                 ],
                 conf,
             )
+
+        for device_event, device_event_v in MEASUREMENT_TYPES_EVENT_SENSOR.items():
+            event_name = CONF_ON_EVENT_PREFIX + device_event
+
+            for conf in config.get(event_name, []):
+                trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+                cg.add(trigger.set_device_type(
+                    HexInt(device_event_v["measurement_type"])))
+                cg.add(trigger.set_event_type(
+                    HexInt(device_event_v["event_id"])))
+                await automation.build_automation(
+                    trigger,
+                    [
+                        (cg.uint64.operator("const"), "address"),
+                        (BTHomeMeasurementEventRecord.operator("const"), "event")
+                    ],
+                    conf,
+                )
 
         return var
 

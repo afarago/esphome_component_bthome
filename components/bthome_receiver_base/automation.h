@@ -38,8 +38,21 @@ namespace esphome
       explicit EventTrigger(BTHomeReceiverBaseHub *parent)
       {
         parent->add_on_event_callback([this](const mac_address_t address, const bthome_measurement_event_record_t event)
-                                      { this->trigger(address, event); });
+                                      { 
+                                        if (
+                                          (!this->device_type_ || this->device_type_ == event.device_type) && 
+                                          (!this->event_type_ || this->event_type_ == event.event_type) 
+                                          ) {
+                                        this->trigger(address, event); 
+                                      } });
       }
+
+      void set_device_type(bthome_measurement_t value) { this->device_type_ = value; }
+      void set_event_type(uint8_t value) { this->event_type_ = value; }
+
+    private:
+      uint8_t device_type_{0};
+      uint8_t event_type_{0};
     };
 
     // add_on_event_callback
