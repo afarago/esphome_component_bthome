@@ -17,6 +17,7 @@
 #include "bthome_receiver_base_basesensor.h"
 #include "bthome_receiver_base_binarysensor.h"
 #include "bthome_receiver_base_sensor.h"
+#include "bthome_receiver_base_eventtarget.h"
 
 #include <vector>
 #include <map>
@@ -29,7 +30,7 @@ namespace esphome
     using namespace bthome_base;
     using namespace bthome_receiver_base;
 
-    class BTHomeReceiverBaseHub : public Component
+    class BTHomeReceiverBaseHub : public Component, public BTHomeReceiverBaseEventTarget
     {
     public:
       DumpOption_e get_dump_option() { return this->dump_option_; };
@@ -41,19 +42,7 @@ namespace esphome
       BTHomeReceiverBaseDevice *add_device(bthome_base::mac_address_t address);
       BTHomeReceiverBaseDevice *add_sensor(BTHomeReceiverBaseDevice *btdevice, bthome_base::mac_address_t address, BTHomeReceiverBaseBaseSensor *sensor);
 
-      void add_on_packet_callback(std::function<void(const bthome_base::mac_address_t, const vector<bthome_base::bthome_measurement_record_t>)> callback)
-      {
-        this->on_packet_callback_.add(std::move(callback));
-      }
-      void add_on_event_callback(std::function<void(const bthome_base::mac_address_t, const bthome_base::bthome_measurement_event_record_t)> callback)
-      {
-        this->on_event_callback_.add(std::move(callback));
-      }
-
     protected:
-      CallbackManager<void(const bthome_base::mac_address_t, const vector<bthome_base::bthome_measurement_record_t>)> on_packet_callback_;
-      CallbackManager<void(const bthome_base::mac_address_t, const bthome_base::bthome_measurement_event_record_t)> on_event_callback_;
-
       virtual optional<uint8_t> parse_message_bthome_(const bthome_base::mac_address_t address, const uint8_t *payload_data, const uint32_t payload_length, bthome_base::BTProtoVersion_e proto);
       void report_measurements_(vector<bthome_base::bthome_measurement_record_t> measurements, bthome_base::mac_address_t address, BTHomeReceiverBaseDevice *btdevice);
       virtual BTHomeReceiverBaseDevice *create_device(const bthome_base::mac_address_t address) { return new BTHomeReceiverBaseDevice(address); }

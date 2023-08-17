@@ -159,8 +159,11 @@ namespace esphome
 
     bool BeethowenTransmitterHub::send_data(bool complete_only)
     {
-      // send data and any queued events
-      return this->send_datacmd_(complete_only, true);
+      // send data - success only if not currently sending, otherwise failure as we will not queue this
+      if (!beethowen_base::sending)
+        return this->send_datacmd_(complete_only, true);
+      else
+        return false;
     }
 
     bool BeethowenTransmitterHub::send_datacmd_(optional<bool> add_complete_data, bool add_events)
@@ -174,7 +177,9 @@ namespace esphome
         encoder.resetMeasurement();
 
         // add the packet id as first measurement
+        ++this->send_packet_id_;
         encoder.addMeasurementValue(bthome_base::BTHOME_PACKET_ID_VALUE, this->send_packet_id_);
+        this->save_packetid_state_rtc_(this->send_packet_id_);
 
         bool has_meaningful_measurements = false;
 
@@ -255,7 +260,6 @@ namespace esphome
       if (this->is_server_found() && this->send_datacmd_awaiting_ && !beethowen_base::sending)
       {
         this->send_datacmd_awaiting_ = false;
-        this->save_packetid_state_rtc_(++this->send_packet_id_);
         bool success = beethowen_base::sending_success;
 
         // auto dataAckOption = this->get_wait_data_ack_option();
@@ -271,16 +275,11 @@ namespace esphome
         if (success)
         {
           // upon success - remove queued events waiting to be sent
-          if (this->queued_events_.size() == this->send_datacmd_awaiting_events_)
+          while (this->send_datacmd_awaiting_events_ && !this->queued_events_.empty())
           {
-            this->queued_events_.clear();
+            this->queued_events_.pop_front();
+            this->send_datacmd_awaiting_events_--;
           }
-          else
-          {
-            for (auto i = 0; i < this->send_datacmd_awaiting_events_; i++)
-              this->queued_events_.pop_back();
-          }
-          this->send_datacmd_awaiting_events_ = 0;
         }
         else
         {
@@ -302,6 +301,10 @@ namespace esphome
           this->on_send_failed_callback_.call();
 
         this->last_send_millis_ = millis();
+
+        // check if any events are queued, start sending them on success
+        if (success && !this->queued_events_.empty())
+          this->send_datacmd_(nullopt, true);
       }
     }
 
@@ -350,9 +353,11 @@ namespace esphome
 
       this->queued_events_.push_back({device_type, event_type, value});
 
-      // then start sending the event - only events, regardless of success, return true as we will have this queued
-      this->send_datacmd_(nullopt, true);
+      // then start sending the event - only events
+      if (!beethowen_base::sending)
+        this->send_datacmd_(nullopt, true);
 
+      // regardless of success, return true as we will have this queued
       return true;
     }
   }

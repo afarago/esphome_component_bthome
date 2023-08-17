@@ -179,10 +179,48 @@ send
 ~~~~
 This action collects all connected sensor data and sends them thorugh the beethowen channel.
 
+.. code-block:: yaml
+
+  script:
+    then:
+      - beethowen_transmitter.send_data
+      - beethowen_transmitter.send_data: true
+      - beethowen_transmitter.send_data:
+          complete_only: true
+
 Configuration variables:
 ************************
 
+The action can used with parameters or with data value of **complete_only** such as *true* or *false*.
+
 - **complete_only** (*Optional*, bool): Whether to send any available measurements or start sending only if all sensors have valid measurements. Defaults to `true`.
+
+send_event
+~~~~~~~~~~
+This action sends an event through the channel with queuing until successful transmission.
+
+.. code-block:: yaml
+
+  binary_sensor:
+    - id: user_button
+      on_click:
+        - beethowen_transmitter.send_event: button_click
+        - beethowen_transmitter.send_event:
+            device_type: button
+            event_type: double_click
+        - beethowen_transmitter.send_event:
+            device_type: dimmer
+            event_type: left
+            value: 3
+
+Configuration variables:
+************************
+
+The action can used with parameters or with data value of **device_event_type** such as *button_click*.
+
+- **device_type** (string): Device type id of the event.
+- **event_type** (string): Event type id of the event.
+- **value** (*Optional*, int): Value associated with the event (e.g. for dimmer)
 
 See Also
 --------

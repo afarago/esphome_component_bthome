@@ -13,13 +13,16 @@
 #include "bthome_receiver_base_common.h"
 #include "bthome_receiver_base_basesensor.h"
 #include "bthome_receiver_base_sensor.h"
+#include "bthome_receiver_base_eventtarget.h"
 
 namespace esphome
 {
   namespace bthome_receiver_base
   {
-    class BTHomeReceiverBaseDevice : public Component
+    class BTHomeReceiverBaseDevice : public Component, public BTHomeReceiverBaseEventTarget
     {
+      friend class BTHomeReceiverBaseHub;
+
     public:
       BTHomeReceiverBaseDevice(bthome_base::mac_address_t address) { this->set_address(address); }
 

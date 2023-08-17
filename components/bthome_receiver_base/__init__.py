@@ -111,6 +111,27 @@ class Generator:
     hubid_ = {}
     devices_by_addr_ = dict()  # dict of DeviceStorage
 
+    # event_schema used along receiver and receiver/device nodes
+    event_schema = cv.Schema(
+        {
+            cv.Optional(CONF_ON_PACKET): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PacketTrigger),
+                }
+            ),
+            cv.Optional(CONF_ON_EVENT): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(EventTrigger),
+                }
+            )
+        }).extend(cv.Schema(
+            {cv.Optional(CONF_ON_EVENT_PREFIX + device_event): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(EventTrigger)
+                }
+            ) for device_event in MEASUREMENT_TYPES_EVENT_SENSOR})
+    )
+
     def __init__(self, hubid):
         self.hubid_ = hubid
 
@@ -138,9 +159,9 @@ class Generator:
                 cv.Optional(CONF_NAME_PREFIX): cv.string,
                 cv.Optional(CONF_DUMP_OPTION): cv.enum(
                     DUMP_OPTION, upper=True, space="_"
-                ),
+                )
             }
-        )
+        ).extend(self.event_schema)
 
     def generate_component_schema(self):
 
@@ -154,26 +175,62 @@ class Generator:
                 cv.Optional(CONF_DEVICES): cv.ensure_list(
                     self.generate_component_device_schema()
                 ),
-                cv.Optional(CONF_ON_PACKET): automation.validate_automation(
-                    {
-                        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PacketTrigger),
-                    }
-                ),
-                cv.Optional(CONF_ON_EVENT): automation.validate_automation(
-                    {
-                        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(EventTrigger),
-                    }
-                )
             }
-        ).extend(cv.Schema(
-            {cv.Optional(CONF_ON_EVENT_PREFIX + device_event): automation.validate_automation(
-                {
-                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(EventTrigger)
-                }
-            ) for device_event in MEASUREMENT_TYPES_EVENT_SENSOR})
-        ).extend(cv.COMPONENT_SCHEMA)
+        ).extend(self.event_schema).extend(cv.COMPONENT_SCHEMA)
 
         return CONFIG_SCHEMA
+
+    async def to_code_automations(self, config, var):
+        for conf in config.get(CONF_ON_PACKET, []):
+            trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+            if CONF_MAC_ADDRESS in config:
+                cg.add(trigger.set_parent_device_address(
+                    config[CONF_MAC_ADDRESS].as_hex))
+            await automation.build_automation(
+                trigger,
+                [
+                    (cg.uint64.operator("const"), "address"),
+                    (
+                        cg.std_vector.template(BTHomeMeasurementRecord).operator(
+                            "const"
+                        ),
+                        "measurements",
+                    ),
+                ],
+                conf,
+            )
+        for conf in config.get(CONF_ON_EVENT, []):
+            trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+            if CONF_MAC_ADDRESS in config:
+                cg.add(trigger.set_parent_device_address(
+                    config[CONF_MAC_ADDRESS].as_hex))
+            await automation.build_automation(
+                trigger,
+                [
+                    (cg.uint64.operator("const"), "address"),
+                    (BTHomeMeasurementEventRecord.operator("const"), "event")
+                ],
+                conf,
+            )
+        for device_event, device_event_v in MEASUREMENT_TYPES_EVENT_SENSOR.items():
+            event_name = CONF_ON_EVENT_PREFIX + device_event
+            for conf in config.get(event_name, []):
+                trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+                cg.add(trigger.set_device_type(
+                    HexInt(device_event_v["measurement_type"])))
+                cg.add(trigger.set_event_type(
+                    HexInt(device_event_v["event_id"])))
+                if CONF_MAC_ADDRESS in config:
+                    cg.add(trigger.set_parent_device_address(
+                        config[CONF_MAC_ADDRESS].as_hex))
+                await automation.build_automation(
+                    trigger,
+                    [
+                        (cg.uint64.operator("const"), "address"),
+                        (BTHomeMeasurementEventRecord.operator("const"), "event")
+                    ],
+                    conf,
+                )
 
     async def to_code_device(self, parent, config, ID_PROP):
         # add to device registry
@@ -204,6 +261,9 @@ class Generator:
         if CONF_DUMP_OPTION in config:
             cg.add(var.set_dump_option(config[CONF_DUMP_OPTION]))
 
+        # event automations
+        await self.to_code_automations(config, var)
+
         return devs
 
     async def to_code(self, config):
@@ -222,49 +282,7 @@ class Generator:
                 await self.to_code_device(var, config_item, CONF_ID)
 
         # automations
-        for conf in config.get(CONF_ON_PACKET, []):
-            trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
-            await automation.build_automation(
-                trigger,
-                [
-                    (cg.uint64.operator("const"), "address"),
-                    (
-                        cg.std_vector.template(BTHomeMeasurementRecord).operator(
-                            "const"
-                        ),
-                        "measurements",
-                    ),
-                ],
-                conf,
-            )
-        for conf in config.get(CONF_ON_EVENT, []):
-            trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
-            await automation.build_automation(
-                trigger,
-                [
-                    (cg.uint64.operator("const"), "address"),
-                    (BTHomeMeasurementEventRecord.operator("const"), "event")
-                ],
-                conf,
-            )
-
-        for device_event, device_event_v in MEASUREMENT_TYPES_EVENT_SENSOR.items():
-            event_name = CONF_ON_EVENT_PREFIX + device_event
-
-            for conf in config.get(event_name, []):
-                trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
-                cg.add(trigger.set_device_type(
-                    HexInt(device_event_v["measurement_type"])))
-                cg.add(trigger.set_event_type(
-                    HexInt(device_event_v["event_id"])))
-                await automation.build_automation(
-                    trigger,
-                    [
-                        (cg.uint64.operator("const"), "address"),
-                        (BTHomeMeasurementEventRecord.operator("const"), "event")
-                    ],
-                    conf,
-                )
+        await self.to_code_automations(config, var)
 
         return var
 

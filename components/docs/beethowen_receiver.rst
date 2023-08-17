@@ -1,6 +1,8 @@
 Beethowen Receiver
 ==================
 
+.. _bthome_common_format: :doc:`./bthome_common_format.rst`
+
 **Beethowen** is an energy efficient method to transfer data over 
 `ESP-NOW <https://www.espressif.com/en/solutions/low-power-solutions/esp-now>`_ Wireless 
 Communication Protocol by Espressif Systems between two devices.
@@ -115,6 +117,48 @@ Configuration variables:
 
   - **expected_remote_passkey** (*Optional*, int, 16-bit): remote passkey that identifies or authorizes the incoming communication packet.
 
+Automations
+***********
+
+on_packet
+~~~~~~~~~
+This automation will be triggered when a transmission is successfully received.
+In Lambdas you can get the *address* of the sender device and the list of *measurements* received.
+
+.. code-block:: yaml
+
+  beethowen_receiver:
+    on_packet: # on_packet(address, measurements)
+      - light.turn_on:
+          id: my_led
+          flash_length: 50ms
+
+on_event
+~~~~~~~~
+This automation will be triggered when a transmission with event type is successfully received.
+In Lambdas you can get the *address* of the sender device and the *event* received.
+
+Named events are available as well for each subevent type such as **on_button_click** or **on_dimmer_rotate_left**.
+Event types are described in `bthome common format <bthome_common_format.rst>`__.
+
+.. code-block:: yaml
+
+  beethowen_receiver:
+    on_event: # on_event(address, event)
+      - lambda: |-
+          ESP_LOGI("app", "event received {device_type} %d {event_type} %d {value} %d", x.device_type, x.event_type, x.value);
+    devices:
+      - mac_address: AA:BB:CC:DD:EE:FF
+        on_event: # on_event(address, event)
+          - lambda: |-
+              ESP_LOGI("app", "event received {device_type} %d {event_type} %d {value} %d", x.device_type, x.event_type, x.value);
+        on_button_click: # on_event(address, event)
+          - lambda: |-
+              ESP_LOGI("app", "on_button_click");
+        on_button_long_click: # on_event(address, event)
+          - lambda: |-
+              ESP_LOGI("app", "on_button_long_click");
+
 Authorization with a premature security concept:
 ************************************************
 
@@ -170,8 +214,6 @@ To initialize a sensor, first supply ``mac_address`` to identify the remote Beet
             accuracy_decimals: 2
             unit_of_measurement: °C
 
-
-.. _bthome_common_format: :doc:`./bthome_common_format.rst`
 
 .. _config-beethowen-sensor:
 

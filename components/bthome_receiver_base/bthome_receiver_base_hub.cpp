@@ -72,13 +72,14 @@ namespace esphome
 #endif // ESPHOME_LOG_HAS_DEBUG
       };
 
-      // report events - trigger automation
+      // report events - trigger automations
       for (auto item : measurements)
       {
         if (!item.is_value)
         {
-          // TODO: events should not be logged as unmatched
           this->on_event_callback_.call(address, item.d.event);
+          if (btdevice)
+            btdevice->on_event_callback_.call(address, item.d.event);
         }
       }
 
@@ -151,6 +152,8 @@ namespace esphome
 
       // trigger automation
       this->on_packet_callback_.call(address, measurements);
+      if (btdevice)
+        btdevice->on_packet_callback_.call(address, measurements);
 
       // return parsed packet_id
       return packet_id;

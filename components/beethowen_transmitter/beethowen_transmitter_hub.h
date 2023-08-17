@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <map>
+#include <deque>
 
 #include "esphome/core/component.h"
 #include "esphome/core/automation.h"
@@ -120,7 +121,7 @@ namespace esphome
       uint8_t send_datacmd_awaiting_events_{0};
       uint16_t local_passkey_{0};
       uint16_t remote_expected_passkey_{0};
-      std::vector<bthome_base::bthome_measurement_event_record_t> queued_events_;
+      std::deque<bthome_base::bthome_measurement_event_record_t> queued_events_;
       std::vector<BTHomeTypedSensor> my_sensors_;
       bthome_base::BTHomeEncoder encoder{MAX_BEETHOWEN_PAYLOAD_LENGTH};
 
