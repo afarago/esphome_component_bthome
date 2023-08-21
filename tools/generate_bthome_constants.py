@@ -393,15 +393,21 @@ namespace bthome_base
                 ][0]
             except:
                 pass
-            if item:
-                values.append(
-                    "  "
+
+            elem = ("  "
+                    + f'/* {"0x%02x" % measurement_type} */ '
                     + "0b"
-                    + format((item["decode_datatype_key"]), "08b")
-                    + f', /* {"0x%02x" %item["measurement_type"]} | {item["property"]} | {item["property_unique"]} | {item["data_type"]} | {item["accuracy_decimals"]} */'
-                )
-            else:
-                values.append("  0b00000000, /* unused */")
+                    + format((item["decode_datatype_key"]
+                             if item else 0), "08b")
+                    + ', /* '
+                    + (f'{item["property_unique"]} | {item["data_type"]} | {item["main_type"]}' +
+                       (f' * {math.pow(10,-int(item["accuracy_decimals"]))}' if item["main_type"]
+                        == "numeric" else "")
+                       if item else 'unused')
+                    + ' */'
+                    )
+
+            values.append(elem)
         names = "\n".join(values)
         return (
             "static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ \n"

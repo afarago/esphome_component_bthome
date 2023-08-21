@@ -98,88 +98,88 @@ typedef enum {
 } BTHome_Dimmer_e;
 
 static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ 
-  0b00000001, /* 0x00 | packet_id | packet_id | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x01 | battery | battery | uint8 (1 byte) | 0 */
-  0b01001010, /* 0x02 | temperature | temperature | sint16 (2 bytes) | 2 */
-  0b01000010, /* 0x03 | humidity | humidity | uint16 (2 bytes) | 2 */
-  0b01000011, /* 0x04 | pressure | pressure | uint24 (3 bytes) | 2 */
-  0b01000011, /* 0x05 | illuminance | illuminance | uint24 (3 bytes) | 2 */
-  0b01000010, /* 0x06 | mass_kg | mass_kg | uint16 (2 byte) | 2 */
-  0b01000010, /* 0x07 | mass_lb | mass_lb | uint16 (2 byte) | 2 */
-  0b01001010, /* 0x08 | dewpoint | dewpoint | sint16 (2 bytes) | 2 */
-  0b00000001, /* 0x09 | count | count | uint (1 bytes) | 0 */
-  0b01100011, /* 0x0a | energy | energy | uint24 (3 bytes) | 3 */
-  0b01000011, /* 0x0b | power | power | uint24 (3 bytes) | 2 */
-  0b01100010, /* 0x0c | voltage | voltage | uint16 (2 bytes) | 3 */
-  0b00000010, /* 0x0d | pm2_5 | pm2_5 | uint16 (2 bytes) | 0 */
-  0b00000010, /* 0x0e | pm10 | pm10 | uint16 (2 bytes) | 0 */
-  0b00000001, /* 0x0f | generic_boolean | generic_boolean | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x10 | power | power | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x11 | opening | opening | uint8 (1 byte) | 0 */
-  0b00000010, /* 0x12 | co2 | co2 | uint16 (2 bytes) | 0 */
-  0b00000010, /* 0x13 | tvoc | tvoc | uint16 (2 bytes) | 0 */
-  0b01000010, /* 0x14 | moisture | moisture | uint16 (2 bytes) | 2 */
-  0b00000001, /* 0x15 | battery | battery | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x16 | battery_charging | battery_charging | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x17 | carbon_monoxide | carbon_monoxide | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x18 | cold | cold | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x19 | connectivity | connectivity | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x1a | door | door | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x1b | garage_door | garage_door | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x1c | gas | gas | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x1d | heat | heat | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x1e | light | light | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x1f | lock | lock | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x20 | moisture | moisture | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x21 | motion | motion | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x22 | moving | moving | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x23 | occupancy | occupancy | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x24 | plug | plug | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x25 | presence | presence | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x26 | problem | problem | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x27 | running | running | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x28 | safety | safety | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x29 | smoke | smoke | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x2a | sound | sound | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x2b | tamper | tamper | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x2c | vibration | vibration | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x2d | window | window | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x2e | humidity | humidity_coarse | uint8 (1 byte) | 0 */
-  0b00000001, /* 0x2f | moisture | moisture_coarse | uint8 (1 byte) | 0 */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000000, /* unused */
-  0b00000001, /* 0x3a | button | button_none | uint8 (1 byte) | 0 */
-  0b00000000, /* unused */
-  0b00000010, /* 0x3c | dimmer | dimmer_none | uint8 (2 byte) | 0 */
-  0b00000010, /* 0x3d | count | count_2 | uint (2 bytes) | 0 */
-  0b00000100, /* 0x3e | count | count_4 | uint (4 bytes) | 0 */
-  0b00101010, /* 0x3f | rotation | rotation | sint16 (2 bytes) | 1 */
-  0b00000010, /* 0x40 | distance_mm | distance_mm | uint16 (2 bytes) | 0 */
-  0b00100010, /* 0x41 | distance_m | distance_m | uint16 (2 bytes) | 1 */
-  0b01100011, /* 0x42 | duration | duration | uint24 (3 bytes) | 3 */
-  0b01100010, /* 0x43 | current | current | uint16 (2 bytes) | 3 */
-  0b01000010, /* 0x44 | speed | speed | uint16 (2 bytes) | 2 */
-  0b00101010, /* 0x45 | temperature | temperature_coarse | sint16 (2 bytes) | 1 */
-  0b00100001, /* 0x46 | uv_index | uv_index | uint8 (1 byte) | 1 */
-  0b00100010, /* 0x47 | volume | volume | uint16 (2 bytes) | 1 */
-  0b00000010, /* 0x48 | volume | volume_mL | uint16 (2 bytes) | 0 */
-  0b01100010, /* 0x49 | volume_flow_rate | volume_flow_rate | uint16 (2 bytes) | 3 */
-  0b00100010, /* 0x4a | voltage | voltage_coarse | uint16 (2 bytes) | 1 */
-  0b01100011, /* 0x4b | gas | gas | uint24 (3 bytes) | 3 */
-  0b01100100, /* 0x4c | gas | gas_4 | uint32 (4 bytes) | 3 */
-  0b01100100, /* 0x4d | energy | energy_4 | uint32 (4 bytes) | 3 */
-  0b01100100, /* 0x4e | volume | volume_precise | uint32 (4 bytes) | 3 */
-  0b01100100, /* 0x4f | water | water | uint32 (4 bytes) | 3 */
-  0b00000100, /* 0x50 | timestamp | timestamp | uint48 (4 bytes) | 0 */
-  0b01100010, /* 0x51 | acceleration | acceleration | uint16 (2 bytes) | 3 */
+  /* 0x00 */ 0b00000001, /* packet_id | uint8 (1 byte) | numeric * 1.0 */
+  /* 0x01 */ 0b00000001, /* battery | uint8 (1 byte) | numeric * 1.0 */
+  /* 0x02 */ 0b01001010, /* temperature | sint16 (2 bytes) | numeric * 0.01 */
+  /* 0x03 */ 0b01000010, /* humidity | uint16 (2 bytes) | numeric * 0.01 */
+  /* 0x04 */ 0b01000011, /* pressure | uint24 (3 bytes) | numeric * 0.01 */
+  /* 0x05 */ 0b01000011, /* illuminance | uint24 (3 bytes) | numeric * 0.01 */
+  /* 0x06 */ 0b01000010, /* mass_kg | uint16 (2 byte) | numeric * 0.01 */
+  /* 0x07 */ 0b01000010, /* mass_lb | uint16 (2 byte) | numeric * 0.01 */
+  /* 0x08 */ 0b01001010, /* dewpoint | sint16 (2 bytes) | numeric * 0.01 */
+  /* 0x09 */ 0b00000001, /* count | uint (1 bytes) | numeric * 1.0 */
+  /* 0x0a */ 0b01100011, /* energy | uint24 (3 bytes) | numeric * 0.001 */
+  /* 0x0b */ 0b01000011, /* power | uint24 (3 bytes) | numeric * 0.01 */
+  /* 0x0c */ 0b01100010, /* voltage | uint16 (2 bytes) | numeric * 0.001 */
+  /* 0x0d */ 0b00000010, /* pm2_5 | uint16 (2 bytes) | numeric * 1.0 */
+  /* 0x0e */ 0b00000010, /* pm10 | uint16 (2 bytes) | numeric * 1.0 */
+  /* 0x0f */ 0b00000001, /* generic_boolean | uint8 (1 byte) | binary */
+  /* 0x10 */ 0b00000001, /* power | uint8 (1 byte) | binary */
+  /* 0x11 */ 0b00000001, /* opening | uint8 (1 byte) | binary */
+  /* 0x12 */ 0b00000010, /* co2 | uint16 (2 bytes) | numeric * 1.0 */
+  /* 0x13 */ 0b00000010, /* tvoc | uint16 (2 bytes) | numeric * 1.0 */
+  /* 0x14 */ 0b01000010, /* moisture | uint16 (2 bytes) | numeric * 0.01 */
+  /* 0x15 */ 0b00000001, /* battery | uint8 (1 byte) | binary */
+  /* 0x16 */ 0b00000001, /* battery_charging | uint8 (1 byte) | binary */
+  /* 0x17 */ 0b00000001, /* carbon_monoxide | uint8 (1 byte) | binary */
+  /* 0x18 */ 0b00000001, /* cold | uint8 (1 byte) | binary */
+  /* 0x19 */ 0b00000001, /* connectivity | uint8 (1 byte) | binary */
+  /* 0x1a */ 0b00000001, /* door | uint8 (1 byte) | binary */
+  /* 0x1b */ 0b00000001, /* garage_door | uint8 (1 byte) | binary */
+  /* 0x1c */ 0b00000001, /* gas | uint8 (1 byte) | binary */
+  /* 0x1d */ 0b00000001, /* heat | uint8 (1 byte) | binary */
+  /* 0x1e */ 0b00000001, /* light | uint8 (1 byte) | binary */
+  /* 0x1f */ 0b00000001, /* lock | uint8 (1 byte) | binary */
+  /* 0x20 */ 0b00000001, /* moisture | uint8 (1 byte) | binary */
+  /* 0x21 */ 0b00000001, /* motion | uint8 (1 byte) | binary */
+  /* 0x22 */ 0b00000001, /* moving | uint8 (1 byte) | binary */
+  /* 0x23 */ 0b00000001, /* occupancy | uint8 (1 byte) | binary */
+  /* 0x24 */ 0b00000001, /* plug | uint8 (1 byte) | binary */
+  /* 0x25 */ 0b00000001, /* presence | uint8 (1 byte) | binary */
+  /* 0x26 */ 0b00000001, /* problem | uint8 (1 byte) | binary */
+  /* 0x27 */ 0b00000001, /* running | uint8 (1 byte) | binary */
+  /* 0x28 */ 0b00000001, /* safety | uint8 (1 byte) | binary */
+  /* 0x29 */ 0b00000001, /* smoke | uint8 (1 byte) | binary */
+  /* 0x2a */ 0b00000001, /* sound | uint8 (1 byte) | binary */
+  /* 0x2b */ 0b00000001, /* tamper | uint8 (1 byte) | binary */
+  /* 0x2c */ 0b00000001, /* vibration | uint8 (1 byte) | binary */
+  /* 0x2d */ 0b00000001, /* window | uint8 (1 byte) | binary */
+  /* 0x2e */ 0b00000001, /* humidity_coarse | uint8 (1 byte) | numeric * 1.0 */
+  /* 0x2f */ 0b00000001, /* moisture_coarse | uint8 (1 byte) | numeric * 1.0 */
+  /* 0x30 */ 0b00000000, /* unused */
+  /* 0x31 */ 0b00000000, /* unused */
+  /* 0x32 */ 0b00000000, /* unused */
+  /* 0x33 */ 0b00000000, /* unused */
+  /* 0x34 */ 0b00000000, /* unused */
+  /* 0x35 */ 0b00000000, /* unused */
+  /* 0x36 */ 0b00000000, /* unused */
+  /* 0x37 */ 0b00000000, /* unused */
+  /* 0x38 */ 0b00000000, /* unused */
+  /* 0x39 */ 0b00000000, /* unused */
+  /* 0x3a */ 0b00000001, /* button_none | uint8 (1 byte) | event */
+  /* 0x3b */ 0b00000000, /* unused */
+  /* 0x3c */ 0b00000010, /* dimmer_none | uint8 (2 byte) | event */
+  /* 0x3d */ 0b00000010, /* count_2 | uint (2 bytes) | numeric * 1.0 */
+  /* 0x3e */ 0b00000100, /* count_4 | uint (4 bytes) | numeric * 1.0 */
+  /* 0x3f */ 0b00101010, /* rotation | sint16 (2 bytes) | numeric * 0.1 */
+  /* 0x40 */ 0b00000010, /* distance_mm | uint16 (2 bytes) | numeric * 1.0 */
+  /* 0x41 */ 0b00100010, /* distance_m | uint16 (2 bytes) | numeric * 0.1 */
+  /* 0x42 */ 0b01100011, /* duration | uint24 (3 bytes) | numeric * 0.001 */
+  /* 0x43 */ 0b01100010, /* current | uint16 (2 bytes) | numeric * 0.001 */
+  /* 0x44 */ 0b01000010, /* speed | uint16 (2 bytes) | numeric * 0.01 */
+  /* 0x45 */ 0b00101010, /* temperature_coarse | sint16 (2 bytes) | numeric * 0.1 */
+  /* 0x46 */ 0b00100001, /* uv_index | uint8 (1 byte) | numeric * 0.1 */
+  /* 0x47 */ 0b00100010, /* volume | uint16 (2 bytes) | numeric * 0.1 */
+  /* 0x48 */ 0b00000010, /* volume_mL | uint16 (2 bytes) | numeric * 1.0 */
+  /* 0x49 */ 0b01100010, /* volume_flow_rate | uint16 (2 bytes) | numeric * 0.001 */
+  /* 0x4a */ 0b00100010, /* voltage_coarse | uint16 (2 bytes) | numeric * 0.1 */
+  /* 0x4b */ 0b01100011, /* gas | uint24 (3 bytes) | numeric * 0.001 */
+  /* 0x4c */ 0b01100100, /* gas_4 | uint32 (4 bytes) | numeric * 0.001 */
+  /* 0x4d */ 0b01100100, /* energy_4 | uint32 (4 bytes) | numeric * 0.001 */
+  /* 0x4e */ 0b01100100, /* volume_precise | uint32 (4 bytes) | numeric * 0.001 */
+  /* 0x4f */ 0b01100100, /* water | uint32 (4 bytes) | numeric * 0.001 */
+  /* 0x50 */ 0b00000100, /* timestamp | uint48 (4 bytes) | numeric * 1.0 */
+  /* 0x51 */ 0b01100010, /* acceleration | uint16 (2 bytes) | numeric * 0.001 */
 };
 
 }
