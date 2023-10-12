@@ -124,7 +124,7 @@ CONFIG_SCHEMA = cv.All(
                     cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SendFailedTrigger),
                 }
             ),
-            cv.Required(CONF_SENSORS): cv.All(
+            cv.Optional(CONF_SENSORS): cv.All(
                 cv.ensure_list(
                     cv.Any(
                         cv.Schema(
