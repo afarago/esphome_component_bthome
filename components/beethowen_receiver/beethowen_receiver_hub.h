@@ -28,6 +28,8 @@ namespace esphome
 
       void setup() override;
 
+      float get_setup_priority() const override { return setup_priority::AFTER_CONNECTION; }
+
     protected:
       uint16_t local_passkey_{0};
       bool send_data_ack_{false};
