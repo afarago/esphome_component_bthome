@@ -1,6 +1,6 @@
 ***Deprecation warning***
 
-I have not been putting much effort to this project lately mainly due to the lack of possibility to easy integration with Home Assistant and also the tedious process of setting up sensors in bot sides.
+I have not been putting much effort to this project lately mainly due to the lack of possibility to easy integration with Home Assistant and also the tedious process of setting up sensors in both sides.
 
 I think the good direction would be 
 * initial and later on demand handshake, also with a full description of the sensor (sensor name, maybe even type and misc attributes) - custom protocol, even on wifi if available or sensor by sensor in separate ESPNOW packages
