@@ -1,3 +1,17 @@
+***Deprecation warning***
+
+I have not been putting much effort to this project lately mainly due to the lack of possibility to easy integration with Home Assistant and also the tedious process of setting up sensors in bot sides.
+
+I think the good direction would be 
+* initial and later on demand handshake, also with a full description of the sensor (sensor name, maybe even type and misc attributes) - custom protocol, even on wifi if available or sensor by sensor in separate ESPNOW packages
+* regular update of the sensors - current concept, one message batching many sensors
+* allow multiple proxies to receive the message
+* separate broadcast messages (no server confirmation required similar to BTHome over BLE) and messages where confirmation is needed.
+
+If you feel the energy to take over, kindly fork and bring this forward!
+
+---
+
 # BTHome and Beethowen Custom Components for ESPHome
 
 This package implements ESPHome components to low-code support Bluetooth Low Eneregy BTHome device 
