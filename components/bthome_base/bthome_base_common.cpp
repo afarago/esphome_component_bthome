@@ -5,7 +5,10 @@
  */
 
 #include <string>
+
+#ifndef USE_ESP32
 #include <pgmspace.h>
+#endif
 
 #include "bthome_base_common.h"
 #include "bthome_common_generated.h"
@@ -50,8 +53,11 @@ namespace bthome_base
         // check range
         if (obj_meas_type >= sizeof(MEAS_TYPES_FLAGS) / sizeof(uint8_t))
             return {};
-
+#ifndef USE_ESP32
         const uint8_t meas_type_flags = pgm_read_byte_near(MEAS_TYPES_FLAGS + obj_meas_type);
+#else
+        const uint8_t meas_type_flags = MEAS_TYPES_FLAGS[obj_meas_type];
+#endif
         const uint8_t factor_raw = (meas_type_flags & 0b01100000) >> 5;
         BTHomeDataFormat retval = {
             .factor_raw = factor_raw,

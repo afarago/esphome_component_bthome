@@ -10,7 +10,10 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <cstring>
+#ifndef USE_ESP32
 #include <pgmspace.h>
+#endif
 
 #include "bthome_parser.h"
 #include "bthome_common_generated.h"
@@ -65,6 +68,21 @@ namespace bthome_base
     HaBleTypes_e obj_data_format;
     uint8_t obj_data_start;
     float obj_data_factor;
+
+    if (log_cb)
+    {               
+	  char buffer [4];
+	  char msg [70]; 
+      int n;
+	  strcpy(msg, "rec BT payload is : ");
+      for (int i = 0; i < payload_length; ++i)
+       { 
+           n=sprintf (buffer, "%.2x ", payload_data[i]);
+		   strlcat(msg, buffer, sizeof(msg)); 
+       }
+	   log_cb(msg);
+    }
+		
 
     while (payload_length >= next_obj_start + 1)
     {

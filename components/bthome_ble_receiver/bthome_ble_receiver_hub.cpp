@@ -88,13 +88,13 @@ namespace esphome
           // bthome_receiver_mac_reversed = data[1:7]
           // mac_readable = to_mac(bthome_receiver_mac_reversed[::-1])
           payload_data += 7;
-          payload_length = -7;
+          payload_length -= 7;
         }
         else
         {
           // mac_readable = service_info.address;
           payload_data += 1;
-          payload_length = -1;
+          payload_length -= 1;
         }
       }
 

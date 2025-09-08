@@ -2,7 +2,11 @@
 /* auto generated, do not edit */
 
 #pragma once
+
+#ifndef USE_ESP32
 #include <pgmspace.h>
+#endif
+
 
 namespace bthome_base
 {
@@ -88,7 +92,8 @@ typedef enum {
   BTHOME_BUTTON_TRIPLE_CLICK = 0x03, 
   BTHOME_BUTTON_LONG_CLICK = 0x04, 
   BTHOME_BUTTON_LONG_DOUBLE_CLICK = 0x05, 
-  BTHOME_BUTTON_LONG_TRIPLE_CLICK = 0x06
+  BTHOME_BUTTON_LONG_TRIPLE_CLICK = 0x06,
+  BTHOME_BUTTON_HOLD_CLICK = 0x80
 } BTHome_Button_e;
 
 typedef enum {
@@ -97,10 +102,14 @@ typedef enum {
   BTHOME_DIMMER_ROTATE_RIGHT = 0x02
 } BTHome_Dimmer_e;
 
-static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ 
+#ifndef USE_ESP32
+static const uint8_t PROGMEM  MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ 
+#else
+static const uint8_t MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bits Factor | 4-5th bits DataType | 1-2-3rd bits DataLen */ 
+#endif
   /* 0x00 */ 0b00000001, /* packet_id | uint8 (1 byte) | numeric * 1.0 */
   /* 0x01 */ 0b00000001, /* battery | uint8 (1 byte) | numeric * 1.0 */
-  /* 0x02 */ 0b01001010, /* temperature | sint16 (2 bytes) | numeric * 0.01 */
+  /* 0x02 */ 0b01001010, /* temperature | sint16 (2 bytes) | numeric * 0.01 */  
   /* 0x03 */ 0b01000010, /* humidity | uint16 (2 bytes) | numeric * 0.01 */
   /* 0x04 */ 0b01000011, /* pressure | uint24 (3 bytes) | numeric * 0.01 */
   /* 0x05 */ 0b01000011, /* illuminance | uint24 (3 bytes) | numeric * 0.01 */
@@ -180,6 +189,18 @@ static const uint8_t PROGMEM MEAS_TYPES_FLAGS[] = { /* 8th bit Unused | 6-7th bi
   /* 0x4f */ 0b01100100, /* water | uint32 (4 bytes) | numeric * 0.001 */
   /* 0x50 */ 0b00000100, /* timestamp | uint48 (4 bytes) | numeric * 1.0 */
   /* 0x51 */ 0b01100010, /* acceleration | uint16 (2 bytes) | numeric * 0.001 */
+  /* 0x52 */ 0b01100010, /* gyroscope | uint16 (2 bytes) | numeric * 0.001 */
+  /* 0x53 */ 0b00000000, /* text */
+  /* 0x54 */ 0b00000000, /* raw */
+  /* 0x55 */ 0b01100100, /* volume storage | uint32 (4 bytes) | numeric * 0.001 */  
+  /* 0x56 */ 0b00000010, /* conductivity | uint16 (2 bytes) | numeric * 1.0 */
+  /* 0x57 */ 0b00001001, /* temperature | sint8 (1 byte) | numeric 1.0 */
+  /* 0x58 */ 0b00001001, /* temperature | sint8 (1 btes) | numeric * 0.35 !!!!! */
+  /* 0x59 */ 0b00001001, /* count | sint8 (1 byte) | numeric 1.0 */
+  /* 0x5a */ 0b00001010, /* count | sint16 (2 bytes) | numeric 1.0 */
+  /* 0x5b */ 0b00001100, /* count | sint32 (4 bytes) | numeric * 1.0 */
+  /* 0x5c */ 0b01001100, /* power | sint32 (4 bytes) | numeric * 0.01 */
+  /* 0x5d */ 0b01101010, /* current |  sint16 (2 bytes) | numeric * 0.001 */
 };
 
 }
